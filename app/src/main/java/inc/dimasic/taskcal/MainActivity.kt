@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import dagger.hilt.android.AndroidEntryPoint
+import inc.dimasic.taskcal.ui.AppTopBar
 import inc.dimasic.taskcal.ui.BottomBar
 import inc.dimasic.taskcal.ui.BottomTab
 import inc.dimasic.taskcal.ui.screens.TodayScreen
@@ -43,6 +44,9 @@ fun TaskCalApp() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        topBar = {
+            AppTopBar(title = selectedTab.label)
+        },
         bottomBar = {
             BottomBar(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
         },

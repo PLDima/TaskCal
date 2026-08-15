@@ -39,6 +39,7 @@ fun TodayScreen(
     val monday = remember(today) { today.with(DayOfWeek.MONDAY) }
     val weekDates = remember(monday) { (0..6).map { monday.plusDays(it.toLong()) } }
     val selectedDate by viewModel.selectedDate.collectAsState()
+    val tasks by viewModel.tasks.collectAsState()
 
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Row(
@@ -55,6 +56,16 @@ fun TodayScreen(
                 )
             }
         }
+
+        TasksSection(
+            tasks = tasks,
+            onSeeAllClick = {
+                // TODO: navigate to Tasks screen
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp),
+        )
     }
 }
 
