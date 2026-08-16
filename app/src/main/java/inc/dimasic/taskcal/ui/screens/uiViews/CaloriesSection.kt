@@ -62,7 +62,12 @@ fun CaloriesSection(
                     total = calories.caloriesGoal,
                     caption = "Goal",
                 )
-                VerticalDivider(modifier = Modifier.fillMaxHeight(), color = ItemSplitter)
+                VerticalDivider(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 16.dp),
+                    color = ItemSplitter
+                )
                 CaloriesProgress(
                     used = calories.caloriesUsed,
                     total = calories.caloriesBurned,
@@ -87,7 +92,9 @@ fun CaloriesSection(
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 8.dp),
                     color = ItemSplitter,
                 )
                 MacroRow(
@@ -97,7 +104,9 @@ fun CaloriesSection(
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider(
-                    modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 8.dp),
                     color = ItemSplitter,
                 )
                 MacroRow(
