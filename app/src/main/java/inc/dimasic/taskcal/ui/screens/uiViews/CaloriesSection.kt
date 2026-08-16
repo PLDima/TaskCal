@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.uiViews
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -46,14 +46,14 @@ fun CaloriesSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(ItemBackground)
-                .padding(16.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                    .height(IntrinsicSize.Min)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(ItemBackground)
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -73,8 +73,11 @@ fun CaloriesSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp)
-                    .height(IntrinsicSize.Min),
+                    .padding(top = 8.dp)
+                    .height(IntrinsicSize.Min)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(ItemBackground)
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MacroRow(
@@ -178,7 +181,7 @@ private fun CaloriesProgress(
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = if (used > total) "$over kcal over" else "$remaining kcal left",
+            text = if (used > total) "$over kcal over" else "$remaining Today balance",
             style = MaterialTheme.typography.labelSmall,
             color = if (used > total) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
         )

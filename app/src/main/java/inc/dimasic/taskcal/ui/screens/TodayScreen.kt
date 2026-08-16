@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import inc.dimasic.taskcal.ui.screens.uiViews.CaloriesSection
+import inc.dimasic.taskcal.ui.screens.uiViews.TasksSection
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -73,7 +75,7 @@ fun TodayScreen(
             calories = calories,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 24.dp),
+                .padding(top = 14.dp),
         )
     }
 }

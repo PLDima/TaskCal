@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.uiViews
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
