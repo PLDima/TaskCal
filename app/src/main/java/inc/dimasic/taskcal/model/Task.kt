@@ -1,15 +1,13 @@
 package inc.dimasic.taskcal.model
 
-import java.time.LocalDate
 import java.util.UUID
 
 data class Task(
     val id: String = UUID.randomUUID().toString(),
-    val name: String,
+    val title: String,
     val description: String,
     val priority: Priority,
-    val status: Status,
-    val date: LocalDate,
+    val recurrenceType: RecurrenceType,
 )
 
 enum class Priority(val label: String) {
@@ -18,8 +16,9 @@ enum class Priority(val label: String) {
     HIGH("High"),
 }
 
-enum class Status(val label: String) {
-    TODO("To Do"),
-    IN_PROGRESS("In Progress"),
-    DONE("Done"),
+enum class RecurrenceType(val label: String) {
+    NONE("None"),
+    DAILY("Daily"),
+    WEEKLY("Weekly"),
+    MONTHLY("Monthly"),
 }

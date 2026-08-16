@@ -32,7 +32,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import inc.dimasic.taskcal.model.Priority
 import inc.dimasic.taskcal.model.Status
-import inc.dimasic.taskcal.model.Task
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
@@ -41,9 +40,9 @@ private const val VISIBLE_TASK_COUNT = 4
 
 @Composable
 fun TasksSection(
-    tasks: List<Task>,
+    tasks: List<TaskListItem>,
     onSeeAllClick: () -> Unit,
-    onTaskCheckedChange: (Task) -> Unit,
+    onTaskCheckedChange: (TaskListItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val visibleTasks = tasks
@@ -97,7 +96,7 @@ fun TasksSection(
 
 @Composable
 private fun TaskItem(
-    task: Task,
+    task: TaskListItem,
     onCheckedChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -115,7 +114,7 @@ private fun TaskItem(
                 .background(priorityColor(task.priority)),
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = task.name, style = MaterialTheme.typography.bodyLarge)
+            Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
             Text(
                 text = task.description,
                 style = MaterialTheme.typography.bodySmall,

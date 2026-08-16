@@ -40,6 +40,7 @@ fun TodayScreen(
     val weekDates = remember(monday) { (0..6).map { monday.plusDays(it.toLong()) } }
     val selectedDate by viewModel.selectedDate.collectAsState()
     val tasks by viewModel.tasksForSelectedDate.collectAsState()
+    val calories by viewModel.caloriesForSelectedDate.collectAsState()
 
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Row(
@@ -62,7 +63,14 @@ fun TodayScreen(
             onSeeAllClick = {
                 // TODO: navigate to Tasks screen
             },
-            onTaskCheckedChange = { task -> viewModel.toggleTaskCompletion(task.id) },
+            onTaskCheckedChange = { task -> viewModel.toggleTaskCompletion(task.occurrenceId) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp),
+        )
+
+        CaloriesSection(
+            calories = calories,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
