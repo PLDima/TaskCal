@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
+import inc.dimasic.taskcal.usecase.CaloriesSummary
 import kotlin.math.roundToInt
 
 @Composable
@@ -191,7 +192,7 @@ private fun MacroRow(
     goal: Double,
     modifier: Modifier = Modifier,
 ) {
-    val remaining = (goal - used).coerceAtLeast(0.0)
+    val remaining = goal.coerceAtLeast(0.0)
     val fraction = if (goal > 0) (used / goal).toFloat().coerceIn(0f, 1f) else 0f
     val percent = (fraction * 100).roundToInt()
 
@@ -237,21 +238,5 @@ private fun MacroProgressBar(
                 .clip(RoundedCornerShape(2.dp))
                 .background(MaterialTheme.colorScheme.primary),
         )
-    }
-}
-
-data class CaloriesSummary(
-    val caloriesUsed: Int,
-    val caloriesGoal: Int,
-    val caloriesBurned: Int,
-    val proteinUsed: Double,
-    val proteinGoal: Double,
-    val carbsUsed: Double,
-    val carbsGoal: Double,
-    val fatUsed: Double,
-    val fatGoal: Double,
-) {
-    companion object {
-        val Empty = CaloriesSummary(0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     }
 }

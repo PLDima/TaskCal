@@ -35,6 +35,7 @@ import inc.dimasic.taskcal.model.Status
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
+import inc.dimasic.taskcal.usecase.TaskListItem
 
 private const val VISIBLE_TASK_COUNT = 4
 
