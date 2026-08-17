@@ -28,17 +28,24 @@ class TasksUseCase @Inject constructor() {
         combine(tasks, occurrences, date) { tasks, occurrences, selectedDate ->
             occurrences
                 .filter { it.date == selectedDate }
-                .mapNotNull { occurrence ->
-                    val task = tasks.find { it.id == occurrence.taskId } ?: return@mapNotNull null
-                    TaskListItem(
-                        occurrenceId = occurrence.id,
-                        title = task.title,
-                        description = task.description,
-                        priority = task.priority,
-                        status = occurrence.status,
-                    )
-                }
+                .mapNotNull { occurrence -> occurrence.toTaskListItem(tasks) }
         }
+
+    fun allTasks(): Flow<List<TaskListItem>> =
+        combine(tasks, occurrences) { tasks, occurrences ->
+            occurrences.mapNotNull { occurrence -> occurrence.toTaskListItem(tasks) }
+        }
+
+    private fun TaskOccurrence.toTaskListItem(tasks: List<Task>): TaskListItem? {
+        val task = tasks.find { it.id == taskId } ?: return null
+        return TaskListItem(
+            occurrenceId = id,
+            title = task.title,
+            description = task.description,
+            priority = task.priority,
+            status = status,
+        )
+    }
 
     fun toggleTaskCompletion(occurrenceId: String) {
         occurrences.value = occurrences.value.map { occurrence ->
