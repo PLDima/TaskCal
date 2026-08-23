@@ -22,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import inc.dimasic.taskcal.ui.AppTopBar
 import inc.dimasic.taskcal.ui.BottomBar
 import inc.dimasic.taskcal.ui.BottomTab
+import inc.dimasic.taskcal.ui.screens.FoodScreen
 import inc.dimasic.taskcal.ui.screens.TasksScreen
 import inc.dimasic.taskcal.ui.screens.TodayScreen
 import inc.dimasic.taskcal.ui.theme.TaskCalTheme
@@ -66,6 +67,7 @@ fun TabContent(tab: BottomTab, modifier: Modifier = Modifier) {
     when (tab) {
         BottomTab.TODAY -> TodayScreen(modifier = modifier)
         BottomTab.TASKS -> TasksScreen(modifier = modifier)
+        BottomTab.FOOD -> FoodScreen(modifier = modifier)
         else -> Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(text = tab.label, style = MaterialTheme.typography.headlineMedium)
         }
