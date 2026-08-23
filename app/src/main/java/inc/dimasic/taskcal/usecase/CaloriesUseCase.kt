@@ -1,10 +1,9 @@
 package inc.dimasic.taskcal.usecase
 
-import inc.dimasic.taskcal.model.FoodEntry
 import inc.dimasic.taskcal.model.Gender
-import inc.dimasic.taskcal.model.MealType
 import inc.dimasic.taskcal.model.NutritionGoal
 import inc.dimasic.taskcal.model.UserProfile
+import inc.dimasic.taskcal.repository.FoodRepository
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -29,14 +28,14 @@ data class CaloriesSummary(
     }
 }
 
-class CaloriesUseCase @Inject constructor() {
+class CaloriesUseCase @Inject constructor(
+    private val foodRepository: FoodRepository,
+) {
 
-    private val foodEntries = MutableStateFlow(mockFoodEntries())
     private val userProfile = MutableStateFlow(mockUserProfile())
 
     fun caloriesForDate(date: Flow<LocalDate>): Flow<CaloriesSummary> =
-        combine(foodEntries, userProfile, date) { entries, profile, selectedDate ->
-            val entriesForDate = entries.filter { it.date == selectedDate }
+        combine(foodRepository.foodEntriesForDate(date), userProfile) { entriesForDate, profile ->
             val goal = profile.nutritionGoal
             CaloriesSummary(
                 caloriesUsed = entriesForDate.sumOf { it.calories },
@@ -65,37 +64,4 @@ class CaloriesUseCase @Inject constructor() {
             fat = 70.0,
         ),
     )
-
-    private fun mockFoodEntries(): List<FoodEntry> {
-        val today = LocalDate.now()
-        return listOf(
-            FoodEntry(
-                date = today,
-                mealType = MealType.BREAKFAST,
-                calories = 420,
-                protein = 28.0,
-                carbs = 5.0,
-                fat = 14.0,
-                note = "Oatmeal with eggs",
-            ),
-            FoodEntry(
-                date = today,
-                mealType = MealType.LUNCH,
-                calories = 680,
-                protein = 5.0,
-                carbs = 70.0,
-                fat = 20.0,
-                note = "Chicken bowl",
-            ),
-            FoodEntry(
-                date = today,
-                mealType = MealType.SNACK,
-                calories = 210,
-                protein = 2.0,
-                carbs = 20.0,
-                fat = 8.0,
-                note = "Protein bar",
-            ),
-        )
-    }
 }
