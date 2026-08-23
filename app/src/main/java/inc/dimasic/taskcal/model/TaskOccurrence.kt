@@ -7,7 +7,8 @@ import java.util.UUID
 data class TaskOccurrence(
     val id: String = UUID.randomUUID().toString(),
     val taskId: String,
-    val date: LocalDate,
+    /** Null means a general task with no specific scheduled date. */
+    val date: LocalDate?,
     val scheduledTime: LocalTime?,
     val status: Status,
 )

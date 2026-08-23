@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.model.Status
-import inc.dimasic.taskcal.usecase.TaskListItem
+import inc.dimasic.taskcal.repository.TaskListItem
 import inc.dimasic.taskcal.usecase.TasksUseCase
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow

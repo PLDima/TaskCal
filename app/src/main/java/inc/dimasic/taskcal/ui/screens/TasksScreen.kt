@@ -13,19 +13,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,10 +42,39 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import inc.dimasic.taskcal.model.Priority
 import inc.dimasic.taskcal.model.Status
+import inc.dimasic.taskcal.repository.TaskListItem
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
-import inc.dimasic.taskcal.usecase.TaskListItem
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+
+private val dateLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
+
+private fun LocalDate?.toRelativeLabel(): String {
+    if (this == null) return "Not specified"
+    val today = LocalDate.now()
+    return when (ChronoUnit.DAYS.between(today, this)) {
+        0L -> "Today"
+        1L -> "Tomorrow"
+        else -> format(dateLabelFormatter)
+    }
+}
+
+private data class TaskSection(
+    val title: String,
+    val tasks: List<TaskListItem>,
+)
+
+private fun List<TaskListItem>.toPrioritySections(): List<TaskSection> {
+    val byPriority = groupBy { it.priority }
+    return listOfNotNull(
+        byPriority[Priority.HIGH]?.let { TaskSection("High priority", it) },
+        byPriority[Priority.MEDIUM]?.let { TaskSection("Medium priority", it) },
+        byPriority[Priority.LOW]?.let { TaskSection("Low priority", it) },
+    )
+}
 
 @Composable
 fun TasksScreen(
@@ -47,6 +83,7 @@ fun TasksScreen(
 ) {
     val selectedFilter by viewModel.selectedFilter.collectAsState()
     val tasks by viewModel.tasks.collectAsState()
+    val sections = tasks.toPrioritySections()
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         FilterTabs(
@@ -55,21 +92,40 @@ fun TasksScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(ItemBackground),
+                .weight(1f)
+                .padding(top = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            tasks.forEachIndexed { index, task ->
-                TaskRow(
-                    task = task,
-                    onCheckedChange = { viewModel.toggleTaskCompletion(task.occurrenceId) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                if (index != tasks.lastIndex) {
-                    HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
+            sections.forEach { section ->
+                item {
+                    Text(
+                        text = section.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(ItemBackground),
+                    ) {
+                        section.tasks.forEachIndexed { index, task ->
+                            TaskRow(
+                                task = task,
+                                onCheckedChange = { viewModel.toggleTaskCompletion(task.occurrenceId) },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            if (index != section.tasks.lastIndex) {
+                                HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -129,27 +185,48 @@ private fun TaskRow(
     modifier: Modifier = Modifier,
 ) {
     val isDone = task.status == Status.DONE
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        RoundCheckbox(checked = isDone, onCheckedChange = onCheckedChange)
+
         Box(
             modifier = Modifier
                 .size(10.dp)
                 .clip(CircleShape)
                 .background(priorityColor(task.priority)),
         )
+
         Column(modifier = Modifier.weight(1f)) {
             Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = task.description,
+                text = task.date.toRelativeLabel(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        RoundCheckbox(checked = isDone, onCheckedChange = onCheckedChange)
+
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "Task options",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+            ) {
+                // TODO: wire up edit/delete task actions
+                DropdownMenuItem(text = { Text("Edit") }, onClick = { menuExpanded = false })
+                DropdownMenuItem(text = { Text("Delete") }, onClick = { menuExpanded = false })
+            }
+        }
     }
 }
 

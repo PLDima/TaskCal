@@ -3,9 +3,9 @@ package inc.dimasic.taskcal.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import inc.dimasic.taskcal.repository.TaskListItem
 import inc.dimasic.taskcal.usecase.CaloriesSummary
 import inc.dimasic.taskcal.usecase.CaloriesUseCase
-import inc.dimasic.taskcal.usecase.TaskListItem
 import inc.dimasic.taskcal.usecase.TasksUseCase
 import java.time.LocalDate
 import javax.inject.Inject
