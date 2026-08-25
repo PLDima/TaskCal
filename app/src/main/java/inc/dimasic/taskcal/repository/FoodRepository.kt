@@ -1,13 +1,26 @@
 package inc.dimasic.taskcal.repository
 
+import inc.dimasic.taskcal.model.DateRange
 import inc.dimasic.taskcal.model.FoodEntry
 import inc.dimasic.taskcal.model.MealType
+import inc.dimasic.taskcal.model.NutritionPeriod
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+
+data class PeriodFoodEntries(
+    val dateRange: DateRange,
+    val entries: List<FoodEntry>,
+) {
+    companion object {
+        val Empty = PeriodFoodEntries(DateRange(LocalDate.now(), LocalDate.now()), emptyList())
+    }
+}
 
 @Singleton
 class FoodRepository @Inject constructor() {
@@ -20,6 +33,26 @@ class FoodRepository @Inject constructor() {
         combine(foodEntries, date) { entries, selectedDate ->
             entries.filter { it.date == selectedDate }
         }
+
+    fun foodEntriesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodFoodEntries> =
+        combine(foodEntries, period, offset) { entries, selectedPeriod, selectedOffset ->
+            val range = dateRangeFor(selectedPeriod, selectedOffset)
+            PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
+        }
+
+    private fun dateRangeFor(period: NutritionPeriod, offset: Int): DateRange {
+        val today = LocalDate.now()
+        return when (period) {
+            NutritionPeriod.WEEK -> {
+                val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).plusWeeks(offset.toLong())
+                DateRange(start = monday, end = monday.plusDays(6))
+            }
+            NutritionPeriod.MONTH -> {
+                val firstOfMonth = today.with(TemporalAdjusters.firstDayOfMonth()).plusMonths(offset.toLong())
+                DateRange(start = firstOfMonth, end = firstOfMonth.with(TemporalAdjusters.lastDayOfMonth()))
+            }
+        }
+    }
 
     private fun mockFoodEntries(): List<FoodEntry> {
         val today = LocalDate.now()
