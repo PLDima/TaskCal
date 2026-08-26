@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens.statistic
+package inc.dimasic.taskcal.ui.screens.statistic.nutrition
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +13,7 @@ import inc.dimasic.taskcal.usecase.FoodUseCase
 import inc.dimasic.taskcal.usecase.MacroChartPoint
 import inc.dimasic.taskcal.usecase.PeriodCaloriesAverages
 import inc.dimasic.taskcal.usecase.PeriodCaloriesSummary
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
-private val summaryDayFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
+private val summaryDayFormatter = DateTimeFormatter.ofPattern("MMM d")
 
 data class NutritionSummaryUi(
     val totalConsumed: Int,
@@ -109,6 +110,9 @@ private fun PeriodCaloriesSummary.toUi(): NutritionSummaryUi = NutritionSummaryU
     totalConsumed = totalConsumed,
     totalBurned = totalBurned,
     avgBalance = avgBalance,
-    bestDayLabel = bestDay?.format(summaryDayFormatter) ?: "-",
-    worstDayLabel = worstDay?.format(summaryDayFormatter) ?: "-",
+    bestDayLabel = bestDay?.toBalanceLabel(bestDayBalance) ?: "-",
+    worstDayLabel = worstDay?.toBalanceLabel(worstDayBalance) ?: "-",
 )
+
+private fun LocalDate.toBalanceLabel(balance: Int): String =
+    "${format(summaryDayFormatter).lowercase()} ($balance kcal)"

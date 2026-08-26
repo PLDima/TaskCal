@@ -91,10 +91,12 @@ data class PeriodCaloriesSummary(
     val totalBurned: Int,
     val avgBalance: Int,
     val bestDay: LocalDate?,
+    val bestDayBalance: Int,
     val worstDay: LocalDate?,
+    val worstDayBalance: Int,
 ) {
     companion object {
-        val Empty = PeriodCaloriesSummary(0, 0, 0, null, null)
+        val Empty = PeriodCaloriesSummary(0, 0, 0, null, 0, null, 0)
     }
 }
 
@@ -149,12 +151,16 @@ class CaloriesUseCase @Inject constructor(
 
             val totalConsumed = periodEntries.entries.sumOf { it.calories }
             val totalBurned = dailyBalances.sumOf { (date, _) -> mockCaloriesBurnedForDate(date) }
+            val bestDayEntry = dailyBalances.minByOrNull { (_, balance) -> balance }
+            val worstDayEntry = dailyBalances.maxByOrNull { (_, balance) -> balance }
             PeriodCaloriesSummary(
                 totalConsumed = totalConsumed,
                 totalBurned = totalBurned,
                 avgBalance = (totalConsumed - totalBurned) / days,
-                bestDay = dailyBalances.minByOrNull { (_, balance) -> balance }?.first,
-                worstDay = dailyBalances.maxByOrNull { (_, balance) -> balance }?.first,
+                bestDay = bestDayEntry?.first,
+                bestDayBalance = bestDayEntry?.second ?: 0,
+                worstDay = worstDayEntry?.first,
+                worstDayBalance = worstDayEntry?.second ?: 0,
             )
         }
 

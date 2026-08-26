@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens.statistic
+package inc.dimasic.taskcal.ui.screens.statistic.nutrition
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState

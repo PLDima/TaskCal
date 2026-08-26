@@ -24,6 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import inc.dimasic.taskcal.ui.screens.statistic.activities.ActivitiesStatisticScreen
+import inc.dimasic.taskcal.ui.screens.statistic.nutrition.NutritionStatisticScreen
+import inc.dimasic.taskcal.ui.screens.statistic.tasks.TasksStatisticScreen
 
 enum class StatisticTab(val label: String) {
     NUTRITION("Nutrition"),
@@ -35,7 +38,11 @@ enum class StatisticTab(val label: String) {
 fun StatisticScreen(modifier: Modifier = Modifier) {
     var selectedTab by remember { mutableStateOf(StatisticTab.NUTRITION) }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+    ) {
         StatisticTabs(
             selectedTab = selectedTab,
             onTabSelected = { selectedTab = it },
