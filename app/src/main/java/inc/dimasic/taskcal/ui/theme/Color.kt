@@ -13,3 +13,7 @@ val Pink40 = Color(0xFF7D5260)
 val ItemBackground = Color(0xFF23262D)
 val ItemSplitter = Color(0xFF4A4D57)
 val StatusDoneGreen = Color(0xFF4CAF50)
+
+val MacroProteinColor = Color(0xFF64B5F6)
+val MacroFatColor = Color(0xFFFFB74D)
+val MacroCarbsColor = Color(0xFFBA68C8)
