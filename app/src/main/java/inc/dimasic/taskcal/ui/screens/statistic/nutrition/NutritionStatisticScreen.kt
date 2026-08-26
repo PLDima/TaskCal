@@ -23,13 +23,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -48,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import inc.dimasic.taskcal.model.MacroType
 import inc.dimasic.taskcal.model.NutritionPeriod
+import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
 import inc.dimasic.taskcal.ui.screens.uiViews.ChartPoint
 import inc.dimasic.taskcal.ui.screens.uiViews.ChartSeries
 import inc.dimasic.taskcal.ui.screens.uiViews.CommonChart
@@ -94,25 +92,12 @@ fun NutritionStatisticScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Row(
-            modifier = Modifier
-                .padding(top = 12.dp, bottom = 16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = viewModel::showPreviousPeriod) {
-                Icon(imageVector = Icons.Filled.ChevronLeft, contentDescription = "Previous period")
-            }
-            Text(
-                text = dateRangeLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = viewModel::showNextPeriod) {
-                Icon(imageVector = Icons.Filled.ChevronRight, contentDescription = "Next period")
-            }
-        }
+        PeriodNavigator(
+            dateRangeLabel = dateRangeLabel,
+            onPreviousPeriod = viewModel::showPreviousPeriod,
+            onNextPeriod = viewModel::showNextPeriod,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         Column(
             modifier = Modifier
