@@ -11,6 +11,7 @@ data class UserProfile(
     val dateOfBirth: LocalDate,
     val height: Double,
     val weight: Double,
+    val weightGoal: Double,
     val nutritionGoal: NutritionGoal,
 )
 

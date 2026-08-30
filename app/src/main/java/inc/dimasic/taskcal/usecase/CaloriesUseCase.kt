@@ -1,20 +1,17 @@
 package inc.dimasic.taskcal.usecase
 
 import inc.dimasic.taskcal.model.DateRange
-import inc.dimasic.taskcal.model.Gender
 import inc.dimasic.taskcal.model.MacroType
-import inc.dimasic.taskcal.model.NutritionGoal
 import inc.dimasic.taskcal.model.NutritionPeriod
-import inc.dimasic.taskcal.model.UserProfile
 import inc.dimasic.taskcal.repository.FoodRepository
 import inc.dimasic.taskcal.repository.PeriodFoodEntries
+import inc.dimasic.taskcal.repository.SettingsRepository
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
@@ -102,9 +99,10 @@ data class PeriodCaloriesSummary(
 
 class CaloriesUseCase @Inject constructor(
     private val foodRepository: FoodRepository,
+    settingsRepository: SettingsRepository,
 ) {
 
-    private val userProfile = MutableStateFlow(mockUserProfile())
+    private val userProfile = settingsRepository.userProfile
 
     fun caloriesForDate(date: Flow<LocalDate>): Flow<CaloriesSummary> =
         combine(date, foodRepository.foodEntriesForDate(date), userProfile) { selectedDate, entriesForDate, profile ->
@@ -224,19 +222,4 @@ class CaloriesUseCase @Inject constructor(
             )
         }
     }
-
-    private fun mockUserProfile(): UserProfile = UserProfile(
-        name = "Alex",
-        email = "alex@example.com",
-        gender = Gender.OTHER,
-        dateOfBirth = LocalDate.of(1995, 5, 20),
-        height = 175.0,
-        weight = 70.0,
-        nutritionGoal = NutritionGoal(
-            calories = 3000,
-            protein = 140.0,
-            carbs = 250.0,
-            fat = 70.0,
-        ),
-    )
 }
