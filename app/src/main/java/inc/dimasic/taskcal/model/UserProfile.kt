@@ -12,6 +12,7 @@ data class UserProfile(
     val height: Double,
     val weight: Double,
     val weightGoal: Double,
+    val stepsGoal: Int,
     val nutritionGoal: NutritionGoal,
 )
 

@@ -1,5 +1,10 @@
 package inc.dimasic.taskcal.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MonitorHeart
@@ -31,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,16 +48,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.HealthConnectClient
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import inc.dimasic.taskcal.repository.HealthConnectStatus
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.usecase.ProfileGoals
 
 private enum class GoalDialog {
     CALORIES,
+    STEPS,
     MACROS,
     WEIGHT,
 }
@@ -58,7 +72,17 @@ private enum class GoalDialog {
 @Composable
 fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = hiltViewModel()) {
     val goals by viewModel.goals.collectAsState()
+    val healthConnectStatus by viewModel.healthConnectStatus.collectAsState()
     var openDialog by remember { mutableStateOf<GoalDialog?>(null) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshHealthConnect()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Column(
         modifier = modifier
@@ -75,6 +99,7 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
         GoalsSection(
             goals = goals,
             onCaloriesGoalClick = { openDialog = GoalDialog.CALORIES },
+            onStepsGoalClick = { openDialog = GoalDialog.STEPS },
             onMacroGoalsClick = { openDialog = GoalDialog.MACROS },
             onWeightGoalClick = { openDialog = GoalDialog.WEIGHT },
             modifier = Modifier
@@ -83,6 +108,10 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
         )
 
         HealthConnectSection(
+            status = healthConnectStatus,
+            permissions = viewModel.healthConnectPermissions,
+            permissionContract = viewModel.healthConnectPermissionContract,
+            onPermissionResult = viewModel::refreshHealthConnect,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
@@ -106,6 +135,14 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
             initialValue = goals.caloriesGoal,
             onConfirm = {
                 viewModel.updateCaloriesGoal(it)
+                openDialog = null
+            },
+            onDismiss = { openDialog = null },
+        )
+        GoalDialog.STEPS -> StepsGoalDialog(
+            initialValue = goals.stepsGoal,
+            onConfirm = {
+                viewModel.updateStepsGoal(it)
                 openDialog = null
             },
             onDismiss = { openDialog = null },
@@ -194,6 +231,7 @@ private fun UserCard(
 private fun GoalsSection(
     goals: ProfileGoals,
     onCaloriesGoalClick: () -> Unit,
+    onStepsGoalClick: () -> Unit,
     onMacroGoalsClick: () -> Unit,
     onWeightGoalClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -221,6 +259,13 @@ private fun GoalsSection(
             )
             HorizontalDivider(color = ItemSplitter)
             PropertyRow(
+                icon = Icons.AutoMirrored.Filled.DirectionsWalk,
+                name = "Daily steps goal",
+                value = "${goals.stepsGoal} steps",
+                onClick = onStepsGoalClick,
+            )
+            HorizontalDivider(color = ItemSplitter)
+            PropertyRow(
                 icon = Icons.Filled.PieChart,
                 name = "Macro goals",
                 value = "P ${goals.proteinGoal.toInt()} · C ${goals.carbsGoal.toInt()} · F ${goals.fatGoal.toInt()} g",
@@ -238,7 +283,16 @@ private fun GoalsSection(
 }
 
 @Composable
-private fun HealthConnectSection(modifier: Modifier = Modifier) {
+private fun HealthConnectSection(
+    status: HealthConnectStatus,
+    permissions: Set<String>,
+    permissionContract: ActivityResultContract<Set<String>, Set<String>>,
+    onPermissionResult: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(permissionContract) { onPermissionResult() }
+
     Column(modifier = modifier) {
         Text(
             text = "Health Connect",
@@ -257,12 +311,36 @@ private fun HealthConnectSection(modifier: Modifier = Modifier) {
             PropertyRow(
                 icon = Icons.Filled.MonitorHeart,
                 name = "Health Connect",
-                value = "Connected",
-                onClick = { /* TODO: connect / disconnect Health Connect */ },
+                value = when (status) {
+                    HealthConnectStatus.CONNECTED -> "Connected"
+                    HealthConnectStatus.NOT_CONNECTED -> "Not connected"
+                    HealthConnectStatus.UNAVAILABLE -> "Not available on this device"
+                },
+                onClick = {
+                    when (status) {
+                        HealthConnectStatus.NOT_CONNECTED -> permissionLauncher.launch(permissions)
+                        HealthConnectStatus.CONNECTED ->
+                            context.startActivitySafely(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+                        HealthConnectStatus.UNAVAILABLE ->
+                            context.startActivitySafely(healthConnectPlayStoreIntent())
+                    }
+                },
             )
         }
     }
 }
+
+private fun Context.startActivitySafely(intent: Intent) {
+    runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+}
+
+private fun healthConnectPlayStoreIntent(): Intent =
+    Intent(Intent.ACTION_VIEW).apply {
+        setPackage("com.android.vending")
+        data = Uri.parse(
+            "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding",
+        )
+    }
 
 @Composable
 private fun PreferencesSection(modifier: Modifier = Modifier) {
@@ -393,6 +471,41 @@ private fun CaloriesGoalDialog(
                 value = text,
                 onValueChange = { text = it },
                 label = { Text("Calories (kcal)") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { parsedValue?.let(onConfirm) },
+                enabled = parsedValue != null && parsedValue > 0,
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun StepsGoalDialog(
+    initialValue: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by remember { mutableStateOf(initialValue.toString()) }
+    val parsedValue = text.toIntOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Daily steps goal") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Steps") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             )

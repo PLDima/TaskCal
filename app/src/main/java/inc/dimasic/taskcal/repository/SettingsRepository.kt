@@ -30,6 +30,10 @@ class SettingsRepository @Inject constructor() {
         profile.value = profile.value.copy(weightGoal = weightGoal)
     }
 
+    fun updateStepsGoal(stepsGoal: Int) {
+        profile.value = profile.value.copy(stepsGoal = stepsGoal)
+    }
+
     private fun mockUserProfile(): UserProfile = UserProfile(
         name = "Alex",
         email = "alex@example.com",
@@ -38,6 +42,7 @@ class SettingsRepository @Inject constructor() {
         height = 175.0,
         weight = 70.0,
         weightGoal = 68.0,
+        stepsGoal = 10_000,
         nutritionGoal = NutritionGoal(
             calories = 3000,
             protein = 140.0,
