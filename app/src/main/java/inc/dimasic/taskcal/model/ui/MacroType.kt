@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.model
+package inc.dimasic.taskcal.model.ui
 
 enum class MacroType(val label: String, val unit: String, val chartMaxValue: Int) {
     PROTEIN("Protein", "g", 200),

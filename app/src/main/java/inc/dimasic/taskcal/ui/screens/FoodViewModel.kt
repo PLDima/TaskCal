@@ -3,7 +3,7 @@ package inc.dimasic.taskcal.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.FoodEntry
+import inc.dimasic.taskcal.model.domain.FoodEntry
 import inc.dimasic.taskcal.usecase.CaloriesSummary
 import inc.dimasic.taskcal.usecase.CaloriesUseCase
 import inc.dimasic.taskcal.usecase.FoodUseCase

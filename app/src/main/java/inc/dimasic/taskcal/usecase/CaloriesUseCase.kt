@@ -1,8 +1,8 @@
 package inc.dimasic.taskcal.usecase
 
-import inc.dimasic.taskcal.model.DateRange
-import inc.dimasic.taskcal.model.MacroType
-import inc.dimasic.taskcal.model.NutritionPeriod
+import inc.dimasic.taskcal.model.ui.DateRange
+import inc.dimasic.taskcal.model.ui.MacroType
+import inc.dimasic.taskcal.model.ui.NutritionPeriod
 import inc.dimasic.taskcal.repository.FoodRepository
 import inc.dimasic.taskcal.repository.PeriodFoodEntries
 import inc.dimasic.taskcal.repository.SettingsRepository

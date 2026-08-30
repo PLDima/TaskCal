@@ -1,8 +1,8 @@
 package inc.dimasic.taskcal.repository
 
-import inc.dimasic.taskcal.model.Gender
-import inc.dimasic.taskcal.model.NutritionGoal
-import inc.dimasic.taskcal.model.UserProfile
+import inc.dimasic.taskcal.model.ui.Gender
+import inc.dimasic.taskcal.model.ui.NutritionGoal
+import inc.dimasic.taskcal.model.ui.UserProfile
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton

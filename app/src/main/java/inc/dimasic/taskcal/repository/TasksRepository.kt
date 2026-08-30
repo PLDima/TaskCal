@@ -1,12 +1,12 @@
 package inc.dimasic.taskcal.repository
 
-import inc.dimasic.taskcal.model.DateRange
-import inc.dimasic.taskcal.model.Priority
-import inc.dimasic.taskcal.model.RecurrenceType
-import inc.dimasic.taskcal.model.Status
-import inc.dimasic.taskcal.model.Task
-import inc.dimasic.taskcal.model.TaskOccurrence
-import inc.dimasic.taskcal.model.TasksPeriod
+import inc.dimasic.taskcal.model.ui.DateRange
+import inc.dimasic.taskcal.model.domain.Priority
+import inc.dimasic.taskcal.model.domain.RecurrenceType
+import inc.dimasic.taskcal.model.domain.Status
+import inc.dimasic.taskcal.model.domain.Task
+import inc.dimasic.taskcal.model.domain.TaskOccurrence
+import inc.dimasic.taskcal.model.ui.TasksPeriod
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -71,15 +71,15 @@ class TasksRepository @Inject constructor() {
         combine(tasks, occurrences) { tasks, occurrences ->
             val today = LocalDate.now()
             occurrences
-                .filter { it.date == null || it.date >= today }
-                .sortedWith(compareBy(nullsLast()) { it.date })
+                .filter { it.scheduledDate == null || it.scheduledDate >= today }
+                .sortedWith(compareBy(nullsLast()) { it.scheduledDate })
                 .mapNotNull { occurrence -> occurrence.toTaskListItem(tasks) }
         }
 
     fun taskListItemsForDate(date: Flow<LocalDate>): Flow<List<TaskListItem>> =
         combine(tasks, occurrences, date) { tasks, occurrences, selectedDate ->
             occurrences
-                .filter { it.date == selectedDate }
+                .filter { it.scheduledDate == selectedDate }
                 .mapNotNull { occurrence -> occurrence.toTaskListItem(tasks) }
         }
 
@@ -89,13 +89,13 @@ class TasksRepository @Inject constructor() {
             val filtered = if (range == null) {
                 allOccurrences
             } else {
-                allOccurrences.filter { it.date != null && range.contains(it.date) }
+                allOccurrences.filter { it.scheduledDate != null && range.contains(it.scheduledDate) }
             }
             PeriodTaskOccurrences(
                 dateRange = range,
                 occurrences = filtered.map {
                     TaskOccurrenceStat(
-                        date = it.date,
+                        date = it.scheduledDate,
                         scheduledTime = it.scheduledTime,
                         status = it.status,
                         completedAt = it.completedAt,
@@ -139,7 +139,7 @@ class TasksRepository @Inject constructor() {
             description = task.description,
             priority = task.priority,
             status = status,
-            date = date,
+            date = scheduledDate,
         )
     }
 
@@ -290,7 +290,7 @@ class TasksRepository @Inject constructor() {
             } else {
                 null
             }
-            TaskOccurrence(taskId = task.id, date = date, scheduledTime = null, status = status, completedAt = completedAt)
+            TaskOccurrence(taskId = task.id, scheduledDate = date, scheduledTime = null, status = status, completedAt = completedAt)
         }
 
         val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -325,7 +325,7 @@ class TasksRepository @Inject constructor() {
         val extraOccurrences = tasks.drop(ORIGINAL_TASK_COUNT).zip(extraSpecs) { task, spec ->
             TaskOccurrence(
                 taskId = task.id,
-                date = spec.date,
+                scheduledDate = spec.date,
                 scheduledTime = spec.scheduledTime,
                 status = spec.status,
                 completedAt = spec.completedAt,

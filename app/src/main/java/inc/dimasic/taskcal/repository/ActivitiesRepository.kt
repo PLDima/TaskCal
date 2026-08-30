@@ -1,7 +1,7 @@
 package inc.dimasic.taskcal.repository
 
-import inc.dimasic.taskcal.model.ActivitiesPeriod
-import inc.dimasic.taskcal.model.DateRange
+import inc.dimasic.taskcal.model.ui.ActivitiesPeriod
+import inc.dimasic.taskcal.model.ui.DateRange
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters

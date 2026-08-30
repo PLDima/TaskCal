@@ -1,9 +1,9 @@
 package inc.dimasic.taskcal.repository
 
-import inc.dimasic.taskcal.model.DateRange
-import inc.dimasic.taskcal.model.FoodEntry
-import inc.dimasic.taskcal.model.MealType
-import inc.dimasic.taskcal.model.NutritionPeriod
+import inc.dimasic.taskcal.model.ui.DateRange
+import inc.dimasic.taskcal.model.domain.FoodEntry
+import inc.dimasic.taskcal.model.domain.MealType
+import inc.dimasic.taskcal.model.ui.NutritionPeriod
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters

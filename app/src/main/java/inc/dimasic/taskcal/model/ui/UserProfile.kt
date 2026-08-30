@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.model
+package inc.dimasic.taskcal.model.ui
 
 import java.time.LocalDate
 import java.util.UUID

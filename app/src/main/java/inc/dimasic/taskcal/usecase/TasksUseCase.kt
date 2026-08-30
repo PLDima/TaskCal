@@ -1,7 +1,7 @@
 package inc.dimasic.taskcal.usecase
 
-import inc.dimasic.taskcal.model.Status
-import inc.dimasic.taskcal.model.TasksPeriod
+import inc.dimasic.taskcal.model.domain.Status
+import inc.dimasic.taskcal.model.ui.TasksPeriod
 import inc.dimasic.taskcal.repository.PeriodTaskOccurrences
 import inc.dimasic.taskcal.repository.TaskListItem
 import inc.dimasic.taskcal.repository.TaskOccurrenceStat

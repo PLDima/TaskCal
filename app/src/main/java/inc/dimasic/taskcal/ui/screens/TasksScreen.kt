@@ -40,8 +40,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.Priority
-import inc.dimasic.taskcal.model.Status
+import inc.dimasic.taskcal.model.domain.Priority
+import inc.dimasic.taskcal.model.domain.Status
 import inc.dimasic.taskcal.repository.TaskListItem
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter

@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.model
+package inc.dimasic.taskcal.model.domain
 
 import java.util.UUID
 
