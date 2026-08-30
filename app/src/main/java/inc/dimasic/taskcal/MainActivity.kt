@@ -2,6 +2,7 @@ package inc.dimasic.taskcal
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import inc.dimasic.taskcal.ui.AppTopBar
 import inc.dimasic.taskcal.ui.BottomBar
 import inc.dimasic.taskcal.ui.BottomTab
 import inc.dimasic.taskcal.ui.screens.FoodScreen
+import inc.dimasic.taskcal.ui.screens.ProfileScreen
 import inc.dimasic.taskcal.ui.screens.TasksScreen
 import inc.dimasic.taskcal.ui.screens.TodayScreen
 import inc.dimasic.taskcal.ui.screens.statistic.StatisticScreen
@@ -44,11 +46,32 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TaskCalApp() {
     var selectedTab by remember { mutableStateOf(BottomTab.TODAY) }
+    var showProfile by remember { mutableStateOf(false) }
+
+    if (showProfile) {
+        BackHandler { showProfile = false }
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                AppTopBar(title = "Profile", onBackClick = { showProfile = false })
+            },
+        ) { innerPadding ->
+            ProfileScreen(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        }
+        return
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            AppTopBar(title = selectedTab.label)
+            AppTopBar(
+                title = selectedTab.label,
+                onProfileClick = { showProfile = true },
+            )
         },
         bottomBar = {
             BottomBar(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
