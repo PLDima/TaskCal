@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,10 +18,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -78,6 +81,7 @@ private fun List<TaskListItem>.toPrioritySections(): List<TaskSection> {
 
 @Composable
 fun TasksScreen(
+    onAddTask: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TasksViewModel = hiltViewModel(),
 ) {
@@ -85,21 +89,23 @@ fun TasksScreen(
     val tasks by viewModel.tasks.collectAsState()
     val sections = tasks.toPrioritySections()
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        FilterTabs(
-            selectedFilter = selectedFilter,
-            onFilterSelected = viewModel::selectFilter,
-            modifier = Modifier.fillMaxWidth(),
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            FilterTabs(
+                selectedFilter = selectedFilter,
+                onFilterSelected = viewModel::selectFilter,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            sections.forEach { section ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(top = 16.dp),
+                contentPadding = PaddingValues(bottom = 88.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                sections.forEach { section ->
                 item {
                     Text(
                         text = section.title,
@@ -127,7 +133,17 @@ fun TasksScreen(
                         }
                     }
                 }
+                }
             }
+        }
+
+        FloatingActionButton(
+            onClick = onAddTask,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(imageVector = Icons.Filled.Add, contentDescription = "Add task")
         }
     }
 }

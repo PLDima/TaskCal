@@ -1,5 +1,7 @@
 package inc.dimasic.taskcal.usecase
 
+import inc.dimasic.taskcal.model.domain.Priority
+import inc.dimasic.taskcal.model.domain.RecurrenceType
 import inc.dimasic.taskcal.model.domain.Status
 import inc.dimasic.taskcal.model.ui.TasksPeriod
 import inc.dimasic.taskcal.repository.PeriodTaskOccurrences
@@ -76,6 +78,14 @@ class TasksUseCase @Inject constructor(
     fun toggleTaskCompletion(occurrenceId: String) {
         tasksRepository.toggleOccurrenceStatus(occurrenceId)
     }
+
+    fun addTask(
+        title: String,
+        description: String,
+        priority: Priority,
+        recurrenceType: RecurrenceType,
+        scheduledDate: LocalDate?,
+    ) = tasksRepository.addTask(title, description, priority, recurrenceType, scheduledDate)
 }
 
 private fun PeriodTaskOccurrences.toSummary(): TasksSummary = TasksSummary(

@@ -11,18 +11,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import inc.dimasic.taskcal.ui.AppTopBar
 import inc.dimasic.taskcal.ui.BottomBar
 import inc.dimasic.taskcal.ui.BottomTab
+import inc.dimasic.taskcal.ui.screens.AddTaskScreen
 import inc.dimasic.taskcal.ui.screens.FoodScreen
 import inc.dimasic.taskcal.ui.screens.ProfileScreen
 import inc.dimasic.taskcal.ui.screens.TasksScreen
@@ -50,35 +47,37 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private const val PROFILE_TRANSITION_MS = 300
+private const val SCREEN_TRANSITION_MS = 300
+
+private enum class Overlay { NONE, PROFILE, ADD_TASK }
 
 @Composable
 fun TaskCalApp() {
     var selectedTab by remember { mutableStateOf(BottomTab.TODAY) }
-    var showProfile by remember { mutableStateOf(false) }
+    var overlay by remember { mutableStateOf(Overlay.NONE) }
 
-    BackHandler(enabled = showProfile) { showProfile = false }
+    BackHandler(enabled = overlay != Overlay.NONE) { overlay = Overlay.NONE }
 
     AnimatedContent(
-        targetState = showProfile,
+        targetState = overlay,
         transitionSpec = {
-            val direction = if (targetState) {
+            val direction = if (targetState != Overlay.NONE) {
                 AnimatedContentTransitionScope.SlideDirection.Left
             } else {
                 AnimatedContentTransitionScope.SlideDirection.Right
             }
-            val slideSpec = tween<IntOffset>(PROFILE_TRANSITION_MS)
-            val fadeSpec = tween<Float>(PROFILE_TRANSITION_MS)
+            val slideSpec = tween<IntOffset>(SCREEN_TRANSITION_MS)
+            val fadeSpec = tween<Float>(SCREEN_TRANSITION_MS)
             (slideIntoContainer(direction, slideSpec) + fadeIn(fadeSpec))
                 .togetherWith(slideOutOfContainer(direction, slideSpec) + fadeOut(fadeSpec))
         },
-        label = "profileTransition",
-    ) { profileVisible ->
-        if (profileVisible) {
-            Scaffold(
+        label = "screenTransition",
+    ) { currentOverlay ->
+        when (currentOverlay) {
+            Overlay.PROFILE -> Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    AppTopBar(title = "Profile", onBackClick = { showProfile = false })
+                    AppTopBar(title = "Profile", onBackClick = { overlay = Overlay.NONE })
                 },
             ) { innerPadding ->
                 ProfileScreen(
@@ -87,13 +86,27 @@ fun TaskCalApp() {
                         .padding(innerPadding),
                 )
             }
-        } else {
-            Scaffold(
+
+            Overlay.ADD_TASK -> Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    AppTopBar(title = "New task", onBackClick = { overlay = Overlay.NONE })
+                },
+            ) { innerPadding ->
+                AddTaskScreen(
+                    onTaskCreated = { overlay = Overlay.NONE },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                )
+            }
+
+            Overlay.NONE -> Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     AppTopBar(
                         title = selectedTab.label,
-                        onProfileClick = { showProfile = true },
+                        onProfileClick = { overlay = Overlay.PROFILE },
                     )
                 },
                 bottomBar = {
@@ -102,6 +115,7 @@ fun TaskCalApp() {
             ) { innerPadding ->
                 TabContent(
                     tab = selectedTab,
+                    onAddTask = { overlay = Overlay.ADD_TASK },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -112,15 +126,12 @@ fun TaskCalApp() {
 }
 
 @Composable
-fun TabContent(tab: BottomTab, modifier: Modifier = Modifier) {
+fun TabContent(tab: BottomTab, onAddTask: () -> Unit, modifier: Modifier = Modifier) {
     when (tab) {
         BottomTab.TODAY -> TodayScreen(modifier = modifier)
-        BottomTab.TASKS -> TasksScreen(modifier = modifier)
+        BottomTab.TASKS -> TasksScreen(onAddTask = onAddTask, modifier = modifier)
         BottomTab.FOOD -> FoodScreen(modifier = modifier)
         BottomTab.STATISTIC -> StatisticScreen(modifier = modifier)
-        else -> Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text(text = tab.label, style = MaterialTheme.typography.headlineMedium)
-        }
     }
 }
 

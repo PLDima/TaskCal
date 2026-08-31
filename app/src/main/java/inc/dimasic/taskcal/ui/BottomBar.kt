@@ -2,24 +2,18 @@ package inc.dimasic.taskcal.ui
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,14 +28,11 @@ import androidx.compose.ui.unit.dp
 enum class BottomTab(val label: String) {
     TODAY("Today"),
     TASKS("Tasks"),
-    ADD("Add"),
     FOOD("Food"),
     STATISTIC("Statistic"),
 }
 
 private const val BAR_HEIGHT_DP = 72
-private const val FAB_SIZE_DP = 56
-private const val FAB_RAISE_DP = 20
 
 @Composable
 fun BottomBar(
@@ -49,51 +40,37 @@ fun BottomBar(
     onTabSelected: (BottomTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth()) {
-        Surface(tonalElevation = 3.dp, shadowElevation = 3.dp) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(BAR_HEIGHT_DP.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                BottomBarItem(
-                    tab = BottomTab.TODAY,
-                    icon = Icons.Filled.CalendarToday,
-                    selected = selectedTab == BottomTab.TODAY,
-                    onClick = { onTabSelected(BottomTab.TODAY) },
-                )
-                BottomBarItem(
-                    tab = BottomTab.TASKS,
-                    icon = Icons.Filled.Checklist,
-                    selected = selectedTab == BottomTab.TASKS,
-                    onClick = { onTabSelected(BottomTab.TASKS) },
-                )
-                Box(modifier = Modifier.weight(1f))
-                BottomBarItem(
-                    tab = BottomTab.FOOD,
-                    icon = Icons.Filled.Restaurant,
-                    selected = selectedTab == BottomTab.FOOD,
-                    onClick = { onTabSelected(BottomTab.FOOD) },
-                )
-                BottomBarItem(
-                    tab = BottomTab.STATISTIC,
-                    icon = Icons.Filled.BarChart,
-                    selected = selectedTab == BottomTab.STATISTIC,
-                    onClick = { onTabSelected(BottomTab.STATISTIC) },
-                )
-            }
-        }
-
-        FloatingActionButton(
-            onClick = { onTabSelected(BottomTab.ADD) },
-            shape = CircleShape,
+    Surface(modifier = modifier.fillMaxWidth(), tonalElevation = 3.dp, shadowElevation = 3.dp) {
+        Row(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-FAB_RAISE_DP).dp)
-                .size(FAB_SIZE_DP.dp),
+                .fillMaxWidth()
+                .height(BAR_HEIGHT_DP.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(Icons.Filled.Add, contentDescription = BottomTab.ADD.label)
+            BottomBarItem(
+                tab = BottomTab.TODAY,
+                icon = Icons.Filled.CalendarToday,
+                selected = selectedTab == BottomTab.TODAY,
+                onClick = { onTabSelected(BottomTab.TODAY) },
+            )
+            BottomBarItem(
+                tab = BottomTab.TASKS,
+                icon = Icons.Filled.Checklist,
+                selected = selectedTab == BottomTab.TASKS,
+                onClick = { onTabSelected(BottomTab.TASKS) },
+            )
+            BottomBarItem(
+                tab = BottomTab.FOOD,
+                icon = Icons.Filled.Restaurant,
+                selected = selectedTab == BottomTab.FOOD,
+                onClick = { onTabSelected(BottomTab.FOOD) },
+            )
+            BottomBarItem(
+                tab = BottomTab.STATISTIC,
+                icon = Icons.Filled.BarChart,
+                selected = selectedTab == BottomTab.STATISTIC,
+                onClick = { onTabSelected(BottomTab.STATISTIC) },
+            )
         }
     }
 }

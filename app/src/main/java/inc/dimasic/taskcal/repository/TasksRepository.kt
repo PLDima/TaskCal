@@ -119,6 +119,28 @@ class TasksRepository @Inject constructor() {
         }
     }
 
+    fun addTask(
+        title: String,
+        description: String,
+        priority: Priority,
+        recurrenceType: RecurrenceType,
+        scheduledDate: LocalDate?,
+    ) {
+        val task = Task(
+            title = title,
+            description = description,
+            priority = priority,
+            recurrenceType = recurrenceType,
+        )
+        tasks.value = tasks.value + task
+        occurrences.value = occurrences.value + TaskOccurrence(
+            taskId = task.id,
+            scheduledDate = scheduledDate,
+            scheduledTime = null,
+            status = Status.TODO,
+        )
+    }
+
     fun toggleOccurrenceStatus(occurrenceId: String) {
         occurrences.value = occurrences.value.map { occurrence ->
             if (occurrence.id != occurrenceId) {
