@@ -3,8 +3,8 @@ package inc.dimasic.taskcal.ui.screens.statistic.activities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.ActivitiesPeriod
-import inc.dimasic.taskcal.model.DateRange
+import inc.dimasic.taskcal.model.ui.ActivitiesPeriod
+import inc.dimasic.taskcal.model.ui.DateRange
 import inc.dimasic.taskcal.repository.ActivitiesRepository
 import inc.dimasic.taskcal.repository.ActivityTotals
 import inc.dimasic.taskcal.repository.PeriodActivityTotals

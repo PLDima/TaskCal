@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.model
+package inc.dimasic.taskcal.model.ui
 
 import java.time.LocalDate
 import java.util.UUID
@@ -11,6 +11,8 @@ data class UserProfile(
     val dateOfBirth: LocalDate,
     val height: Double,
     val weight: Double,
+    val weightGoal: Double,
+    val stepsGoal: Int,
     val nutritionGoal: NutritionGoal,
 )
 

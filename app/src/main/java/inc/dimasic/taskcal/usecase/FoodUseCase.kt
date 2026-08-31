@@ -1,7 +1,7 @@
 package inc.dimasic.taskcal.usecase
 
-import inc.dimasic.taskcal.model.FoodEntry
-import inc.dimasic.taskcal.model.NutritionPeriod
+import inc.dimasic.taskcal.model.domain.FoodEntry
+import inc.dimasic.taskcal.model.ui.NutritionPeriod
 import inc.dimasic.taskcal.repository.FoodRepository
 import inc.dimasic.taskcal.repository.PeriodFoodEntries
 import java.time.LocalDate

@@ -3,8 +3,8 @@ package inc.dimasic.taskcal.ui.screens.statistic.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.DateRange
-import inc.dimasic.taskcal.model.TasksPeriod
+import inc.dimasic.taskcal.model.ui.DateRange
+import inc.dimasic.taskcal.model.ui.TasksPeriod
 import inc.dimasic.taskcal.repository.PeriodTaskOccurrences
 import inc.dimasic.taskcal.usecase.TaskStatusBreakdown
 import inc.dimasic.taskcal.usecase.TasksChartPoint

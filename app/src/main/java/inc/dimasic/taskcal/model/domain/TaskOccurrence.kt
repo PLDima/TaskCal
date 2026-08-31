@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.model
+package inc.dimasic.taskcal.model.domain
 
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -8,8 +8,7 @@ import java.util.UUID
 data class TaskOccurrence(
     val id: String = UUID.randomUUID().toString(),
     val taskId: String,
-    /** Null means a general task with no specific scheduled date. */
-    val date: LocalDate?,
+    val scheduledDate: LocalDate?,
     val scheduledTime: LocalTime?,
     val status: Status,
     /** Moment the occurrence was marked [Status.DONE], null while it isn't. */
