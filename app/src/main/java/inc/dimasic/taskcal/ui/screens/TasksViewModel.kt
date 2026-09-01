@@ -3,8 +3,8 @@ package inc.dimasic.taskcal.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.domain.Status
-import inc.dimasic.taskcal.repository.TaskListItem
+import inc.dimasic.taskcal.model.domain.TaskState
+import inc.dimasic.taskcal.usecase.TaskListItem
 import inc.dimasic.taskcal.usecase.TasksUseCase
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,8 +32,8 @@ class TasksViewModel @Inject constructor(
         combine(tasksUseCase.allTasks(), _selectedFilter) { tasks, filter ->
             when (filter) {
                 TasksFilter.ALL -> tasks
-                TasksFilter.ACTIVE -> tasks.filter { it.status != Status.DONE }
-                TasksFilter.COMPLETED -> tasks.filter { it.status == Status.DONE }
+                TasksFilter.ACTIVE -> tasks.filter { it.state != TaskState.DONE }
+                TasksFilter.COMPLETED -> tasks.filter { it.state == TaskState.DONE }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -41,7 +41,11 @@ class TasksViewModel @Inject constructor(
         _selectedFilter.value = filter
     }
 
-    fun toggleTaskCompletion(occurrenceId: String) {
-        tasksUseCase.toggleTaskCompletion(occurrenceId)
+    fun toggleTaskCompletion(task: TaskListItem) {
+        tasksUseCase.setTaskCompleted(
+            taskId = task.taskId,
+            occurrenceDate = task.occurrenceDate,
+            completed = task.state != TaskState.DONE,
+        )
     }
 }

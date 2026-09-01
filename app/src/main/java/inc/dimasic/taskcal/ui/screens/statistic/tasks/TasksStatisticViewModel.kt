@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.model.ui.DateRange
 import inc.dimasic.taskcal.model.ui.TasksPeriod
-import inc.dimasic.taskcal.repository.PeriodTaskOccurrences
+import inc.dimasic.taskcal.usecase.PeriodTaskOccurrences
 import inc.dimasic.taskcal.usecase.TaskStatusBreakdown
 import inc.dimasic.taskcal.usecase.TasksChartPoint
 import inc.dimasic.taskcal.usecase.TasksSummary

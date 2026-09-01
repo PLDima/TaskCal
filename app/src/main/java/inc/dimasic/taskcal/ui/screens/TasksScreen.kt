@@ -44,11 +44,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import inc.dimasic.taskcal.model.domain.Priority
-import inc.dimasic.taskcal.model.domain.Status
-import inc.dimasic.taskcal.repository.TaskListItem
+import inc.dimasic.taskcal.model.domain.TaskState
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
+import inc.dimasic.taskcal.usecase.TaskListItem
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -124,7 +124,7 @@ fun TasksScreen(
                         section.tasks.forEachIndexed { index, task ->
                             TaskRow(
                                 task = task,
-                                onCheckedChange = { viewModel.toggleTaskCompletion(task.occurrenceId) },
+                                onCheckedChange = { viewModel.toggleTaskCompletion(task) },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             if (index != section.tasks.lastIndex) {
@@ -200,7 +200,7 @@ private fun TaskRow(
     onCheckedChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDone = task.status == Status.DONE
+    val isDone = task.state == TaskState.DONE
     var menuExpanded by remember { mutableStateOf(false) }
 
     Row(

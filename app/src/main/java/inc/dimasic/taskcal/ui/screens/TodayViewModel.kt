@@ -3,9 +3,10 @@ package inc.dimasic.taskcal.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.repository.TaskListItem
+import inc.dimasic.taskcal.model.domain.TaskState
 import inc.dimasic.taskcal.usecase.CaloriesSummary
 import inc.dimasic.taskcal.usecase.CaloriesUseCase
+import inc.dimasic.taskcal.usecase.TaskListItem
 import inc.dimasic.taskcal.usecase.TasksUseCase
 import java.time.LocalDate
 import javax.inject.Inject
@@ -36,7 +37,11 @@ class TodayViewModel @Inject constructor(
         _selectedDate.value = date
     }
 
-    fun toggleTaskCompletion(occurrenceId: String) {
-        tasksUseCase.toggleTaskCompletion(occurrenceId)
+    fun toggleTaskCompletion(task: TaskListItem) {
+        tasksUseCase.setTaskCompleted(
+            taskId = task.taskId,
+            occurrenceDate = task.occurrenceDate,
+            completed = task.state != TaskState.DONE,
+        )
     }
 }
