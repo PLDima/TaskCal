@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.model
+package inc.dimasic.taskcal.domain.usecase.model
 
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.FoodEntry

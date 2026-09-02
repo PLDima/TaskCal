@@ -11,6 +11,10 @@ package inc.dimasic.taskcal.domain.usecase
 fun goalFraction(value: Int, goal: Int): Float =
     if (goal > 0) (value.toFloat() / goal.toFloat()).coerceIn(0f, 1f) else 0f
 
+/** As above, for the gram amounts that macro goals are measured in. */
+fun goalFraction(value: Double, goal: Double): Float =
+    if (goal > 0) (value / goal).toFloat().coerceIn(0f, 1f) else 0f
+
 /** Percentage of the goal reached. Not capped — going past a goal reads above 100%. */
 fun goalPercent(value: Int, goal: Int): Int =
     if (goal > 0) value * 100 / goal else 0

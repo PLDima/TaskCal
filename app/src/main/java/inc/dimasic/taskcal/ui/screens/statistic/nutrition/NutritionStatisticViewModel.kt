@@ -3,7 +3,7 @@ package inc.dimasic.taskcal.ui.screens.statistic.nutrition
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.data.model.PeriodFoodEntries
+import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
@@ -38,7 +38,7 @@ class NutritionStatisticViewModel @Inject constructor(
 
     private val _periodOffset = MutableStateFlow(0)
 
-    val periodFoodEntries: StateFlow<PeriodFoodEntries> =
+    private val periodFoodEntries: StateFlow<PeriodFoodEntries> =
         foodUseCase.entriesForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodFoodEntries.Empty)
 

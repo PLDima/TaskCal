@@ -35,30 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.domain.model.FoodEntry
-import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.ui.screens.uiViews.CaloriesTotalsRow
 import inc.dimasic.taskcal.ui.screens.uiViews.MacroBreakdownRow
 import inc.dimasic.taskcal.ui.screens.uiViews.WeekDatesRow
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-import kotlin.math.roundToInt
-
-private data class MealSection(
-    val title: String,
-    val mealType: MealType,
-    val entries: List<FoodEntry>,
-)
-
-private fun List<FoodEntry>.toMealSections(): List<MealSection> {
-    val byMeal = groupBy { it.mealType }
-    return listOfNotNull(
-        byMeal[MealType.BREAKFAST]?.let { MealSection("Breakfast", MealType.BREAKFAST, it) },
-        byMeal[MealType.LUNCH]?.let { MealSection("Lunch", MealType.LUNCH, it) },
-        byMeal[MealType.DINNER]?.let { MealSection("Dinner", MealType.DINNER, it) },
-        byMeal[MealType.SNACK]?.let { MealSection("Snacks", MealType.SNACK, it) },
-    )
-}
 
 @Composable
 fun FoodScreen(
@@ -67,8 +48,7 @@ fun FoodScreen(
 ) {
     val selectedDate by viewModel.selectedDate.collectAsState()
     val calories by viewModel.caloriesForSelectedDate.collectAsState()
-    val foodEntries by viewModel.foodEntriesForSelectedDate.collectAsState()
-    val sections = foodEntries.toMealSections()
+    val sections by viewModel.mealSections.collectAsState()
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         WeekDatesRow(
@@ -129,7 +109,7 @@ fun FoodScreen(
                             HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
                         }
                         AddFoodRow(
-                            mealType = section.mealType,
+                            label = section.addLabel,
                             onClick = {
                                 // TODO: add food entry logic
                             },
@@ -144,7 +124,7 @@ fun FoodScreen(
 
 @Composable
 private fun FoodEntryRow(
-    entry: FoodEntry,
+    entry: FoodEntryUi,
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -155,10 +135,9 @@ private fun FoodEntryRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = entry.note, style = MaterialTheme.typography.bodyLarge)
+            Text(text = entry.name, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "${entry.calories} kcal · ${entry.protein.roundToInt()}P " +
-                    "${entry.carbs.roundToInt()}C ${entry.fat.roundToInt()}F",
+                text = entry.macrosLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -186,7 +165,7 @@ private fun FoodEntryRow(
 
 @Composable
 private fun AddFoodRow(
-    mealType: MealType,
+    label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -208,7 +187,7 @@ private fun AddFoodRow(
             modifier = Modifier.size(20.dp),
         )
         Text(
-            text = "Add ${mealType.label.lowercase()}",
+            text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
         )

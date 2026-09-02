@@ -1,49 +1,25 @@
 package inc.dimasic.taskcal.data.repository
 
-import inc.dimasic.taskcal.data.model.PeriodFoodEntries
-import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.FoodEntry
 import inc.dimasic.taskcal.domain.model.MealType
-import inc.dimasic.taskcal.domain.model.NutritionPeriod
-import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.asStateFlow
+
+/**
+ * Stores logged food entries. Selecting the entries for a date or a period, and grouping them
+ * into meals, are domain decisions and live in
+ * [inc.dimasic.taskcal.domain.usecase.FoodUseCase] instead.
+ */
 @Singleton
 class FoodRepository @Inject constructor() {
 
-    private val foodEntries = MutableStateFlow(mockFoodEntries())
+    private val _foodEntries = MutableStateFlow(mockFoodEntries())
 
-    val allFoodEntries: Flow<List<FoodEntry>> = foodEntries
-
-    fun foodEntriesForDate(date: Flow<LocalDate>): Flow<List<FoodEntry>> =
-        combine(foodEntries, date) { entries, selectedDate ->
-            entries.filter { it.date == selectedDate }
-        }
-
-    fun foodEntriesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodFoodEntries> =
-        combine(foodEntries, period, offset) { entries, selectedPeriod, selectedOffset ->
-            val range = dateRangeFor(selectedPeriod, selectedOffset)
-            PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
-        }
-
-    private fun dateRangeFor(period: NutritionPeriod, offset: Int): DateRange {
-        val today = LocalDate.now()
-        return when (period) {
-            NutritionPeriod.WEEK -> {
-                val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).plusWeeks(offset.toLong())
-                DateRange(start = monday, end = monday.plusDays(6))
-            }
-            NutritionPeriod.MONTH -> {
-                val firstOfMonth = today.with(TemporalAdjusters.firstDayOfMonth()).plusMonths(offset.toLong())
-                DateRange(start = firstOfMonth, end = firstOfMonth.with(TemporalAdjusters.lastDayOfMonth()))
-            }
-        }
-    }
+    val foodEntries: Flow<List<FoodEntry>> = _foodEntries.asStateFlow()
 
     private fun mockFoodEntries(): List<FoodEntry> {
         val today = LocalDate.now()

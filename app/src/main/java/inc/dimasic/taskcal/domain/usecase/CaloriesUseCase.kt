@@ -1,7 +1,6 @@
 package inc.dimasic.taskcal.domain.usecase
 
-import inc.dimasic.taskcal.data.model.PeriodFoodEntries
-import inc.dimasic.taskcal.data.repository.FoodRepository
+import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
@@ -52,14 +51,14 @@ private fun MacroType.valueFrom(bucket: NutritionChartBucket): Double = when (th
 }
 
 class CaloriesUseCase @Inject constructor(
-    private val foodRepository: FoodRepository,
+    private val foodUseCase: FoodUseCase,
     settingsRepository: SettingsRepository,
 ) {
 
     private val userProfile = settingsRepository.userProfile
 
     fun caloriesForDate(date: Flow<LocalDate>): Flow<CaloriesSummary> =
-        combine(date, foodRepository.foodEntriesForDate(date), userProfile) { selectedDate, entriesForDate, profile ->
+        combine(date, foodUseCase.entriesForDate(date), userProfile) { selectedDate, entriesForDate, profile ->
             val goal = profile.nutritionGoal
             CaloriesSummary(
                 caloriesUsed = entriesForDate.sumOf { it.calories },
@@ -75,7 +74,7 @@ class CaloriesUseCase @Inject constructor(
         }
 
     fun averagesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodCaloriesAverages> =
-        foodRepository.foodEntriesForPeriod(period, offset).map { periodEntries ->
+        foodUseCase.entriesForPeriod(period, offset).map { periodEntries ->
             val days = periodEntries.dateRange.dayCount
             val avgConsumed = if (days > 0) periodEntries.entries.sumOf { it.calories } / days else 0
             val avgBurned = mockCaloriesBurnedForRange(periodEntries.dateRange)
@@ -87,7 +86,7 @@ class CaloriesUseCase @Inject constructor(
         }
 
     fun summaryForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodCaloriesSummary> =
-        foodRepository.foodEntriesForPeriod(period, offset).map { periodEntries ->
+        foodUseCase.entriesForPeriod(period, offset).map { periodEntries ->
             val range = periodEntries.dateRange
             val days = range.dayCount
             if (days <= 0) return@map PeriodCaloriesSummary.Empty
@@ -134,7 +133,7 @@ class CaloriesUseCase @Inject constructor(
         period: Flow<NutritionPeriod>,
         offset: Flow<Int>,
     ): Flow<List<NutritionChartBucket>> =
-        combine(foodRepository.foodEntriesForPeriod(period, offset), period) { periodEntries, selectedPeriod ->
+        combine(foodUseCase.entriesForPeriod(period, offset), period) { periodEntries, selectedPeriod ->
             when (selectedPeriod) {
                 NutritionPeriod.WEEK -> weekBuckets(periodEntries)
                 NutritionPeriod.MONTH -> monthBuckets(periodEntries)

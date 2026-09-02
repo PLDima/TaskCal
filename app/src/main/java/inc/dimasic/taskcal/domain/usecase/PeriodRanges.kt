@@ -2,6 +2,7 @@ package inc.dimasic.taskcal.domain.usecase
 
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.DateRange
+import inc.dimasic.taskcal.domain.model.NutritionPeriod
 import inc.dimasic.taskcal.domain.model.TasksPeriod
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -40,6 +41,11 @@ internal fun dayRangeAt(offset: Int): DateRange {
 internal fun ActivitiesPeriod.dateRangeAt(offset: Int): DateRange = when (this) {
     ActivitiesPeriod.DAY -> dayRangeAt(offset)
     ActivitiesPeriod.WEEK -> weekRangeAt(offset)
+}
+
+internal fun NutritionPeriod.dateRangeAt(offset: Int): DateRange = when (this) {
+    NutritionPeriod.WEEK -> weekRangeAt(offset)
+    NutritionPeriod.MONTH -> monthRangeAt(offset)
 }
 
 /** Null for [TasksPeriod.ALL_TIME], which has no bounds. */
