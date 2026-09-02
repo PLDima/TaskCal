@@ -3,11 +3,13 @@ package inc.dimasic.taskcal.ui.screens.statistic.activities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.data.model.ActivityTotals
-import inc.dimasic.taskcal.data.model.PeriodActivityTotals
-import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.DateRange
+import inc.dimasic.taskcal.domain.usecase.ActivitiesUseCase
+import inc.dimasic.taskcal.domain.usecase.goalFraction
+import inc.dimasic.taskcal.domain.usecase.goalPercent
+import inc.dimasic.taskcal.domain.usecase.model.ActivityTotals
+import inc.dimasic.taskcal.domain.usecase.model.PeriodActivityTotals
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +24,7 @@ private val singleDayFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
 
 @HiltViewModel
 class ActivitiesStatisticViewModel @Inject constructor(
-    private val activitiesRepository: ActivitiesRepository,
+    private val activitiesUseCase: ActivitiesUseCase,
 ) : ViewModel() {
 
     private val _selectedPeriod = MutableStateFlow(ActivitiesPeriod.WEEK)
@@ -31,7 +33,7 @@ class ActivitiesStatisticViewModel @Inject constructor(
     private val _periodOffset = MutableStateFlow(0)
 
     private val periodTotals: StateFlow<PeriodActivityTotals> =
-        activitiesRepository.totalsForPeriod(_selectedPeriod, _periodOffset)
+        activitiesUseCase.totalsForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodActivityTotals.Empty)
 
     val dateRangeLabel: StateFlow<String> = periodTotals
@@ -89,6 +91,7 @@ private fun ActivityTotals.toCharacteristics(): List<ActivityCharacteristic> = l
     ),
 )
 
+/** Formats one metric for display; how far along the goal it is comes from the domain layer. */
 private fun goalCharacteristic(
     title: String,
     value: Int,
@@ -97,6 +100,6 @@ private fun goalCharacteristic(
 ): ActivityCharacteristic = ActivityCharacteristic(
     title = title,
     valueLabel = valueFormat(value),
-    goalPercent = if (goal > 0) value * 100 / goal else 0,
-    fraction = if (goal > 0) (value.toFloat() / goal.toFloat()).coerceIn(0f, 1f) else 0f,
+    goalPercent = goalPercent(value, goal),
+    fraction = goalFraction(value, goal),
 )

@@ -1,5 +1,7 @@
-package inc.dimasic.taskcal.data.repository
+package inc.dimasic.taskcal.domain.usecase
 
+import inc.dimasic.taskcal.data.repository.ActivitiesRepository
+import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.firstValue
 import java.time.DayOfWeek
@@ -12,21 +14,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Characterisation tests for the aggregation `ActivitiesRepository` performs today.
+ * Characterisation tests for activity aggregation.
  *
- * This behaviour is due to move into an `ActivitiesUseCase`, because summing days and applying
- * goals are domain decisions rather than storage concerns. These tests pin what the aggregation
- * produces now so the move can be shown not to change it.
+ * These assertions were originally written against `ActivitiesRepository.totalsForPeriod`, before
+ * summing days and applying goals moved into this use case. They are unchanged, which is what
+ * shows the move did not alter any of the figures.
  *
  * The mock data only covers Monday through today of the current week, so the assertions are
  * written as invariants and relationships rather than fixed numbers.
  */
-class ActivitiesRepositoryTest {
+class ActivitiesUseCaseTest {
 
-    private val repository = ActivitiesRepository()
+    private val useCase = ActivitiesUseCase(ActivitiesRepository(), SettingsRepository())
 
     private fun totals(period: ActivitiesPeriod, offset: Int) =
-        repository.totalsForPeriod(flowOf(period), flowOf(offset)).firstValue()
+        useCase.totalsForPeriod(flowOf(period), flowOf(offset)).firstValue()
 
     @Test
     fun `day period covers exactly one day`() {
@@ -60,7 +62,7 @@ class ActivitiesRepositoryTest {
         val day = totals(ActivitiesPeriod.DAY, offset = 0).totals
         val week = totals(ActivitiesPeriod.WEEK, offset = 0).totals
 
-        // Daily goals are currently constants inside the repository: 600 kcal, 10k steps, 5km.
+        // 600 kcal and 5km are domain defaults; the step goal comes from the user's profile.
         assertEquals(600, day.caloriesGoal)
         assertEquals(10_000, day.stepsGoal)
         assertEquals(5_000, day.distanceGoalMeters)

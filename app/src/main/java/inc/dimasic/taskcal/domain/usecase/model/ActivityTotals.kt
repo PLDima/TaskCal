@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.model
+package inc.dimasic.taskcal.domain.usecase.model
 
 /** Activity figures summed over a period, each alongside the goal for that same period. */
 data class ActivityTotals(

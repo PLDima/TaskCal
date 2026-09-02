@@ -14,11 +14,9 @@ import inc.dimasic.taskcal.domain.usecase.model.TaskOccurrenceStat
 import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
 import inc.dimasic.taskcal.domain.usecase.model.TasksChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +27,7 @@ private val WEEKDAY_LABELS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "S
 private const val MONTH_CHART_BUCKETS = 5
 private const val ALL_TIME_CHART_MONTHS = 6
 private val monthLabelFormatter = DateTimeFormatter.ofPattern("MMM")
+
 class TasksUseCase @Inject constructor(
     private val tasksRepository: TasksRepository,
 ) {
@@ -74,7 +73,7 @@ class TasksUseCase @Inject constructor(
             period,
             offset,
         ) { tasks, completions, selectedPeriod, selectedOffset ->
-            val range = dateRangeFor(selectedPeriod, selectedOffset)
+            val range = selectedPeriod.dateRangeAt(selectedOffset)
             val expansionRange = range ?: allTimeRange()
             val now = LocalDateTime.now()
 
@@ -115,21 +114,6 @@ class TasksUseCase @Inject constructor(
         recurrenceType: RecurrenceType,
         assignedDateTime: LocalDateTime?,
     ) = tasksRepository.addTask(title, description, priority, recurrenceType, assignedDateTime)
-}
-
-private fun dateRangeFor(period: TasksPeriod, offset: Int): DateRange? {
-    val today = LocalDate.now()
-    return when (period) {
-        TasksPeriod.WEEK -> {
-            val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).plusWeeks(offset.toLong())
-            DateRange(start = monday, end = monday.plusDays(6))
-        }
-        TasksPeriod.MONTH -> {
-            val firstOfMonth = today.with(TemporalAdjusters.firstDayOfMonth()).plusMonths(offset.toLong())
-            DateRange(start = firstOfMonth, end = firstOfMonth.with(TemporalAdjusters.lastDayOfMonth()))
-        }
-        TasksPeriod.ALL_TIME -> null
-    }
 }
 
 /**
