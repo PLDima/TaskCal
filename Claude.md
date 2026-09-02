@@ -24,3 +24,4 @@ The project follows a layered architecture:
 - Map Domain models to UI models in the UI layer.
 - Do not expose Data models outside the Data layer.
 - Prefer interfaces for abstractions and direct implementations when appropriate.
+- separate file for non-private data classes

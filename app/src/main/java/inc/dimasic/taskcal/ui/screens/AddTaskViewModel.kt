@@ -2,9 +2,9 @@ package inc.dimasic.taskcal.ui.screens
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.domain.Priority
-import inc.dimasic.taskcal.model.domain.RecurrenceType
-import inc.dimasic.taskcal.usecase.TasksUseCase
+import inc.dimasic.taskcal.domain.model.Priority
+import inc.dimasic.taskcal.domain.model.RecurrenceType
+import inc.dimasic.taskcal.domain.usecase.TasksUseCase
 import java.time.LocalDateTime
 import javax.inject.Inject
 

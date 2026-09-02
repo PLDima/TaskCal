@@ -3,11 +3,11 @@ package inc.dimasic.taskcal.ui.screens.statistic.activities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.ui.ActivitiesPeriod
-import inc.dimasic.taskcal.model.ui.DateRange
-import inc.dimasic.taskcal.repository.ActivitiesRepository
-import inc.dimasic.taskcal.repository.ActivityTotals
-import inc.dimasic.taskcal.repository.PeriodActivityTotals
+import inc.dimasic.taskcal.data.model.ActivityTotals
+import inc.dimasic.taskcal.data.model.PeriodActivityTotals
+import inc.dimasic.taskcal.data.repository.ActivitiesRepository
+import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
+import inc.dimasic.taskcal.domain.model.DateRange
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,18 +19,6 @@ import kotlinx.coroutines.flow.stateIn
 
 private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
 private val singleDayFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
-
-/**
- * One row of the activity characteristics list: value done this period, optionally with a
- * "% of daily goal" figure ([goalPercent]) and a progress bar ([fraction]). Either is null when
- * the characteristic has no goal to track against (e.g. average heart rate).
- */
-data class ActivityCharacteristic(
-    val title: String,
-    val valueLabel: String,
-    val goalPercent: Int?,
-    val fraction: Float?,
-)
 
 @HiltViewModel
 class ActivitiesStatisticViewModel @Inject constructor(

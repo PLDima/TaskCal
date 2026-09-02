@@ -3,9 +3,9 @@ package inc.dimasic.taskcal.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.domain.TaskState
-import inc.dimasic.taskcal.usecase.TaskListItem
-import inc.dimasic.taskcal.usecase.TasksUseCase
+import inc.dimasic.taskcal.domain.model.TaskState
+import inc.dimasic.taskcal.domain.usecase.model.TaskListItem
+import inc.dimasic.taskcal.domain.usecase.TasksUseCase
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

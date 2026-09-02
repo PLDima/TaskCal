@@ -3,10 +3,10 @@ package inc.dimasic.taskcal.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.domain.FoodEntry
-import inc.dimasic.taskcal.usecase.CaloriesSummary
-import inc.dimasic.taskcal.usecase.CaloriesUseCase
-import inc.dimasic.taskcal.usecase.FoodUseCase
+import inc.dimasic.taskcal.domain.model.FoodEntry
+import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
+import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.FoodUseCase
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow

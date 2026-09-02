@@ -25,9 +25,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-import inc.dimasic.taskcal.usecase.CaloriesSummary
 import kotlin.math.roundToInt
 
 @Composable

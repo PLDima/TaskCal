@@ -43,12 +43,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.domain.Priority
-import inc.dimasic.taskcal.model.domain.TaskState
+import inc.dimasic.taskcal.domain.model.Priority
+import inc.dimasic.taskcal.domain.model.TaskState
+import inc.dimasic.taskcal.domain.usecase.model.TaskListItem
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
-import inc.dimasic.taskcal.usecase.TaskListItem
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit

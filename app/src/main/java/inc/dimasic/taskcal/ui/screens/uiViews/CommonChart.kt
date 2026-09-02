@@ -28,11 +28,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-
-data class ChartSeries(val label: String, val color: Color)
-
-data class ChartPoint(val label: String, val values: List<Int>)
-
 @Composable
 fun CommonChart(
     points: List<ChartPoint>,

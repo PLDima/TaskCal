@@ -35,8 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.domain.Priority
-import inc.dimasic.taskcal.model.domain.RecurrenceType
+import inc.dimasic.taskcal.domain.model.Priority
+import inc.dimasic.taskcal.domain.model.RecurrenceType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime

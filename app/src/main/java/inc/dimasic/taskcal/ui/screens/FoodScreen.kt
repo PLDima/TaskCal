@@ -35,8 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.domain.FoodEntry
-import inc.dimasic.taskcal.model.domain.MealType
+import inc.dimasic.taskcal.domain.model.FoodEntry
+import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.ui.screens.uiViews.CaloriesTotalsRow
 import inc.dimasic.taskcal.ui.screens.uiViews.MacroBreakdownRow
 import inc.dimasic.taskcal.ui.screens.uiViews.WeekDatesRow
