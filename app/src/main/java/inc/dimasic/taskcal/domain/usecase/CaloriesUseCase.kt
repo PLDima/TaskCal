@@ -5,9 +5,8 @@ import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
-import inc.dimasic.taskcal.domain.usecase.model.CaloriesChartPoint
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
-import inc.dimasic.taskcal.domain.usecase.model.MacroChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary
 import java.time.LocalDate
@@ -115,18 +114,19 @@ class CaloriesUseCase @Inject constructor(
             )
         }
 
-    fun caloriesChartForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<List<CaloriesChartPoint>> =
+    /** Each point carries consumed first, then burned. */
+    fun caloriesChartForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<List<ChartPoint>> =
         nutritionChartForPeriod(period, offset).map { buckets ->
-            buckets.map { CaloriesChartPoint(label = it.label, consumed = it.consumedCalories, burned = it.burnedCalories) }
+            buckets.map { ChartPoint(label = it.label, values = listOf(it.consumedCalories, it.burnedCalories)) }
         }
 
     fun macroChartForPeriod(
         macro: MacroType,
         period: Flow<NutritionPeriod>,
         offset: Flow<Int>,
-    ): Flow<List<MacroChartPoint>> =
+    ): Flow<List<ChartPoint>> =
         nutritionChartForPeriod(period, offset).map { buckets ->
-            buckets.map { MacroChartPoint(label = it.label, value = macro.valueFrom(it).roundToInt()) }
+            buckets.map { ChartPoint(label = it.label, values = listOf(macro.valueFrom(it).roundToInt())) }
         }
 
     private fun nutritionChartForPeriod(

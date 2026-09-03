@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 @Composable
 fun CommonChart(

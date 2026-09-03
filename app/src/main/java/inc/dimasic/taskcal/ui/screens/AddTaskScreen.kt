@@ -39,14 +39,10 @@ import inc.dimasic.taskcal.domain.model.Priority
 import inc.dimasic.taskcal.domain.model.RecurrenceType
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 private val scheduleDateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
-
-/** Tasks carry a time as well as a date; nothing collects one yet, so they default to 9am. */
-private val DEFAULT_TASK_TIME: LocalTime = LocalTime.of(9, 0)
 
 private enum class ScheduleOption(val label: String) {
     NONE("None"),
@@ -135,11 +131,6 @@ fun AddTaskScreen(
             )
         }
 
-        // A repeating task expands from its start date, so it needs one even when the user picked
-        // no schedule — without an anchor it would never produce an occurrence to show.
-        val startDate = schedule.toDate(pickedDate)
-            ?: LocalDate.now().takeIf { recurrence != RecurrenceType.NONE }
-
         Button(
             onClick = {
                 viewModel.addTask(
@@ -147,7 +138,7 @@ fun AddTaskScreen(
                     description = description.trim(),
                     priority = priority,
                     recurrenceType = recurrence,
-                    assignedDateTime = startDate?.atTime(DEFAULT_TASK_TIME),
+                    assignedDate = schedule.toDate(pickedDate),
                 )
                 onTaskCreated()
             },

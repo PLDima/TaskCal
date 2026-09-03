@@ -11,11 +11,13 @@ import inc.dimasic.taskcal.domain.model.TasksPeriod
 import inc.dimasic.taskcal.domain.usecase.model.PeriodTaskOccurrences
 import inc.dimasic.taskcal.domain.usecase.model.TaskListItem
 import inc.dimasic.taskcal.domain.usecase.model.TaskOccurrenceStat
+import inc.dimasic.taskcal.domain.usecase.model.TaskPriorityGroup
 import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
-import inc.dimasic.taskcal.domain.usecase.model.TasksChartPoint
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -28,11 +30,20 @@ private const val MONTH_CHART_BUCKETS = 5
 private const val ALL_TIME_CHART_MONTHS = 6
 private val monthLabelFormatter = DateTimeFormatter.ofPattern("MMM")
 
+/** Most urgent first, which is the order tasks are grouped and listed in. */
+private val PRIORITY_ORDER = listOf(Priority.HIGH, Priority.MEDIUM, Priority.LOW)
+
+/** Nothing collects a time of day yet, so a task is due at this hour of its date. */
+private val DEFAULT_TASK_TIME: LocalTime = LocalTime.of(9, 0)
+
 class TasksUseCase @Inject constructor(
     private val tasksRepository: TasksRepository,
 ) {
 
-    /** Occurrences falling on [date]. Tasks with no date have no deadline, so they always apply. */
+    /**
+     * Occurrences falling on [date], most important first. Tasks with no date have no deadline,
+     * so they always apply.
+     */
     fun tasksForDate(date: Flow<LocalDate>): Flow<List<TaskListItem>> =
         combine(tasksRepository.tasks, tasksRepository.completions, date) { tasks, completions, selectedDate ->
             val now = LocalDateTime.now()
@@ -44,7 +55,7 @@ class TasksUseCase @Inject constructor(
                         .firstOrNull()
                         ?.let { task.toListItem(it, completions, now) }
                 }
-            }
+            }.byImportance()
         }
 
     /**
@@ -94,7 +105,7 @@ class TasksUseCase @Inject constructor(
     fun taskStatusForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<TaskStatusBreakdown> =
         occurrencesForPeriod(period, offset).map { it.toTaskStatusBreakdown() }
 
-    fun onTimeRateChartForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<List<TasksChartPoint>> =
+    fun onTimeRateChartForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<List<ChartPoint>> =
         combine(occurrencesForPeriod(period, offset), period) { periodOccurrences, selectedPeriod ->
             when (selectedPeriod) {
                 TasksPeriod.WEEK -> weekChartBuckets(periodOccurrences)
@@ -107,13 +118,27 @@ class TasksUseCase @Inject constructor(
         tasksRepository.setCompleted(taskId, occurrenceDate, completed)
     }
 
+    /**
+     * A repeating task expands from its start date, so it always needs one: asking for a repeat
+     * with no date starts the series today rather than creating a task that never comes due.
+     */
     fun addTask(
         title: String,
         description: String,
         priority: Priority,
         recurrenceType: RecurrenceType,
-        assignedDateTime: LocalDateTime?,
-    ) = tasksRepository.addTask(title, description, priority, recurrenceType, assignedDateTime)
+        assignedDate: LocalDate?,
+    ) {
+        val startDate = assignedDate
+            ?: LocalDate.now().takeIf { recurrenceType != RecurrenceType.NONE }
+        tasksRepository.addTask(
+            title = title,
+            description = description,
+            priority = priority,
+            recurrenceType = recurrenceType,
+            assignedDateTime = startDate?.atTime(DEFAULT_TASK_TIME),
+        )
+    }
 }
 
 /**
@@ -126,6 +151,18 @@ private fun allTimeRange(): DateRange {
         end = today,
     )
 }
+
+/** Grouped under their priority, most urgent group first. Priorities with no tasks are left out. */
+fun List<TaskListItem>.groupedByPriority(): List<TaskPriorityGroup> {
+    val byPriority = groupBy { it.priority }
+    return PRIORITY_ORDER.mapNotNull { priority ->
+        byPriority[priority]?.let { TaskPriorityGroup(priority = priority, tasks = it) }
+    }
+}
+
+/** Most important first; tasks of equal priority keep the order they arrived in. */
+private fun List<TaskListItem>.byImportance(): List<TaskListItem> =
+    sortedByDescending { it.priority.ordinal }
 
 private fun Task.toListItem(
     occurrence: LocalDateTime?,
@@ -177,16 +214,16 @@ private fun PeriodTaskOccurrences.toSummary(): TasksSummary = TasksSummary(
     onTimeRatePercent = occurrences.onTimeRatePercent(),
 )
 
-private fun weekChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<TasksChartPoint> {
+private fun weekChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<ChartPoint> {
     val range = periodOccurrences.dateRange ?: return emptyList()
     val occurrencesByDate = periodOccurrences.occurrences.groupBy { it.date }
     return WEEKDAY_LABELS.mapIndexed { index, label ->
         val date = range.start.plusDays(index.toLong())
-        TasksChartPoint(label = label, onTimeRatePercent = occurrencesByDate[date].orEmpty().onTimeRatePercent())
+        ChartPoint(label = label, values = listOf(occurrencesByDate[date].orEmpty().onTimeRatePercent()))
     }
 }
 
-private fun monthChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<TasksChartPoint> {
+private fun monthChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<ChartPoint> {
     val range = periodOccurrences.dateRange ?: return emptyList()
     val totalDays = range.dayCount
     val bucketSize = ceil(totalDays / MONTH_CHART_BUCKETS.toDouble()).toInt().coerceAtLeast(1)
@@ -197,11 +234,11 @@ private fun monthChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<Ta
             val date = stat.date ?: return@filter false
             !date.isBefore(bucketStart) && !date.isAfter(bucketEnd)
         }
-        TasksChartPoint(label = "W${bucketIndex + 1}", onTimeRatePercent = bucketOccurrences.onTimeRatePercent())
+        ChartPoint(label = "W${bucketIndex + 1}", values = listOf(bucketOccurrences.onTimeRatePercent()))
     }
 }
 
-private fun allTimeChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<TasksChartPoint> {
+private fun allTimeChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<ChartPoint> {
     val firstMonth = LocalDate.now().withDayOfMonth(1).minusMonths((ALL_TIME_CHART_MONTHS - 1).toLong())
     return (0 until ALL_TIME_CHART_MONTHS).map { index ->
         val monthStart = firstMonth.plusMonths(index.toLong())
@@ -210,7 +247,7 @@ private fun allTimeChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<
             val date = stat.date ?: return@filter false
             !date.isBefore(monthStart) && !date.isAfter(monthEnd)
         }
-        TasksChartPoint(label = monthStart.format(monthLabelFormatter), onTimeRatePercent = monthOccurrences.onTimeRatePercent())
+        ChartPoint(label = monthStart.format(monthLabelFormatter), values = listOf(monthOccurrences.onTimeRatePercent()))
     }
 }
 

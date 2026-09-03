@@ -5,7 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.domain.model.Priority
 import inc.dimasic.taskcal.domain.model.RecurrenceType
 import inc.dimasic.taskcal.domain.usecase.TasksUseCase
-import java.time.LocalDateTime
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -18,9 +18,9 @@ class AddTaskViewModel @Inject constructor(
         description: String,
         priority: Priority,
         recurrenceType: RecurrenceType,
-        assignedDateTime: LocalDateTime?,
+        assignedDate: LocalDate?,
     ) {
         if (title.isBlank()) return
-        tasksUseCase.addTask(title, description, priority, recurrenceType, assignedDateTime)
+        tasksUseCase.addTask(title, description, priority, recurrenceType, assignedDate)
     }
 }
