@@ -2,7 +2,7 @@ package inc.dimasic.taskcal.domain.usecase
 
 import androidx.activity.result.contract.ActivityResultContract
 import inc.dimasic.taskcal.data.repository.HealthConnectRepository
-import inc.dimasic.taskcal.data.repository.HealthConnectStatus
+import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 

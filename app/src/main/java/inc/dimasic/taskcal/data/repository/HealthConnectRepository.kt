@@ -3,18 +3,12 @@ package inc.dimasic.taskcal.data.repository
 import androidx.activity.result.contract.ActivityResultContract
 import inc.dimasic.taskcal.data.healthconnect.HealthConnectAvailability
 import inc.dimasic.taskcal.data.healthconnect.HealthConnectManager
+import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-/** Health Connect state as shown on the Profile screen. Starts [NOT_CONNECTED] until refreshed. */
-enum class HealthConnectStatus {
-    NOT_CONNECTED,
-    CONNECTED,
-    UNAVAILABLE,
-}
 
 @Singleton
 class HealthConnectRepository @Inject constructor(

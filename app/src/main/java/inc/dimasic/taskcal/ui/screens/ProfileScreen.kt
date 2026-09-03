@@ -57,7 +57,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import inc.dimasic.taskcal.data.repository.HealthConnectStatus
+import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import inc.dimasic.taskcal.domain.usecase.model.ProfileGoals
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter

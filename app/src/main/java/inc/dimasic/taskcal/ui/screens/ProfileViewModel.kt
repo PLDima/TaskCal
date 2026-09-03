@@ -4,10 +4,10 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.data.repository.HealthConnectStatus
+import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import inc.dimasic.taskcal.domain.usecase.HealthConnectUseCase
-import inc.dimasic.taskcal.domain.usecase.model.ProfileGoals
 import inc.dimasic.taskcal.domain.usecase.ProfileUseCase
+import inc.dimasic.taskcal.domain.usecase.model.ProfileGoals
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
