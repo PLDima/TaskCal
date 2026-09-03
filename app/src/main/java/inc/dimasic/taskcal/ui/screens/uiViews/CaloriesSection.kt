@@ -25,9 +25,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import inc.dimasic.taskcal.domain.usecase.goalFraction
+import inc.dimasic.taskcal.domain.usecase.goalOvershoot
+import inc.dimasic.taskcal.domain.usecase.goalRemaining
+import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-import inc.dimasic.taskcal.usecase.CaloriesSummary
 import kotlin.math.roundToInt
 
 @Composable
@@ -91,9 +94,9 @@ private fun CaloriesProgress(
     caption: String,
     modifier: Modifier = Modifier,
 ) {
-    val fraction = if (total > 0) (used.toFloat() / total.toFloat()).coerceIn(0f, 1f) else 0f
-    val remaining = (total - used).coerceAtLeast(0)
-    val over = (used - total).coerceAtLeast(0)
+    val fraction = goalFraction(used, total)
+    val remaining = goalRemaining(used, total)
+    val over = goalOvershoot(used, total)
     val percent = (fraction * 100).roundToInt()
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val progressColor = MaterialTheme.colorScheme.primary

@@ -3,16 +3,15 @@ package inc.dimasic.taskcal.ui.screens.statistic.nutrition
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.ui.DateRange
-import inc.dimasic.taskcal.model.ui.MacroType
-import inc.dimasic.taskcal.model.ui.NutritionPeriod
-import inc.dimasic.taskcal.repository.PeriodFoodEntries
-import inc.dimasic.taskcal.usecase.CaloriesChartPoint
-import inc.dimasic.taskcal.usecase.CaloriesUseCase
-import inc.dimasic.taskcal.usecase.FoodUseCase
-import inc.dimasic.taskcal.usecase.MacroChartPoint
-import inc.dimasic.taskcal.usecase.PeriodCaloriesAverages
-import inc.dimasic.taskcal.usecase.PeriodCaloriesSummary
+import inc.dimasic.taskcal.domain.model.DateRange
+import inc.dimasic.taskcal.domain.model.MacroType
+import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.FoodUseCase
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
+import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
+import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary
+import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -27,19 +26,6 @@ import kotlinx.coroutines.flow.stateIn
 
 private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
 private val summaryDayFormatter = DateTimeFormatter.ofPattern("MMM d")
-
-data class NutritionSummaryUi(
-    val totalConsumed: Int,
-    val totalBurned: Int,
-    val avgBalance: Int,
-    val bestDayLabel: String,
-    val worstDayLabel: String,
-) {
-    companion object {
-        val Empty = NutritionSummaryUi(0, 0, 0, "-", "-")
-    }
-}
-
 @HiltViewModel
 class NutritionStatisticViewModel @Inject constructor(
     private val foodUseCase: FoodUseCase,
@@ -51,7 +37,7 @@ class NutritionStatisticViewModel @Inject constructor(
 
     private val _periodOffset = MutableStateFlow(0)
 
-    val periodFoodEntries: StateFlow<PeriodFoodEntries> =
+    private val periodFoodEntries: StateFlow<PeriodFoodEntries> =
         foodUseCase.entriesForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodFoodEntries.Empty)
 
@@ -63,7 +49,7 @@ class NutritionStatisticViewModel @Inject constructor(
         caloriesUseCase.averagesForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodCaloriesAverages.Empty)
 
-    val caloriesChart: StateFlow<List<CaloriesChartPoint>> =
+    val caloriesChart: StateFlow<List<ChartPoint>> =
         caloriesUseCase.caloriesChartForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -75,7 +61,7 @@ class NutritionStatisticViewModel @Inject constructor(
     private val _expandedMacro = MutableStateFlow<MacroType?>(null)
     val expandedMacro: StateFlow<MacroType?> = _expandedMacro.asStateFlow()
 
-    val macroChart: StateFlow<List<MacroChartPoint>> = _expandedMacro
+    val macroChart: StateFlow<List<ChartPoint>> = _expandedMacro
         .flatMapLatest { macro ->
             if (macro == null) {
                 flowOf(emptyList())

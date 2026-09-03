@@ -43,41 +43,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.domain.Priority
-import inc.dimasic.taskcal.model.domain.Status
-import inc.dimasic.taskcal.repository.TaskListItem
+import inc.dimasic.taskcal.domain.model.Priority
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-
-private val dateLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
-
-private fun LocalDate?.toRelativeLabel(): String {
-    if (this == null) return "Not specified"
-    val today = LocalDate.now()
-    return when (ChronoUnit.DAYS.between(today, this)) {
-        0L -> "Today"
-        1L -> "Tomorrow"
-        else -> format(dateLabelFormatter)
-    }
-}
-
-private data class TaskSection(
-    val title: String,
-    val tasks: List<TaskListItem>,
-)
-
-private fun List<TaskListItem>.toPrioritySections(): List<TaskSection> {
-    val byPriority = groupBy { it.priority }
-    return listOfNotNull(
-        byPriority[Priority.HIGH]?.let { TaskSection("High priority", it) },
-        byPriority[Priority.MEDIUM]?.let { TaskSection("Medium priority", it) },
-        byPriority[Priority.LOW]?.let { TaskSection("Low priority", it) },
-    )
-}
 
 @Composable
 fun TasksScreen(
@@ -86,8 +55,7 @@ fun TasksScreen(
     viewModel: TasksViewModel = hiltViewModel(),
 ) {
     val selectedFilter by viewModel.selectedFilter.collectAsState()
-    val tasks by viewModel.tasks.collectAsState()
-    val sections = tasks.toPrioritySections()
+    val sections by viewModel.sections.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -124,7 +92,7 @@ fun TasksScreen(
                         section.tasks.forEachIndexed { index, task ->
                             TaskRow(
                                 task = task,
-                                onCheckedChange = { viewModel.toggleTaskCompletion(task.occurrenceId) },
+                                onCheckedChange = { viewModel.toggleTaskCompletion(task) },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             if (index != section.tasks.lastIndex) {
@@ -196,11 +164,10 @@ private fun FilterTabs(
 
 @Composable
 private fun TaskRow(
-    task: TaskListItem,
+    task: TaskListItemUi,
     onCheckedChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDone = task.status == Status.DONE
     var menuExpanded by remember { mutableStateOf(false) }
 
     Row(
@@ -208,7 +175,7 @@ private fun TaskRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        RoundCheckbox(checked = isDone, onCheckedChange = onCheckedChange)
+        RoundCheckbox(checked = task.isDone, onCheckedChange = onCheckedChange)
 
         Box(
             modifier = Modifier
@@ -220,7 +187,7 @@ private fun TaskRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = task.date.toRelativeLabel(),
+                text = task.dateLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

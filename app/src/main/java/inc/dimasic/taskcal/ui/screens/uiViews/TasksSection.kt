@@ -30,25 +30,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import inc.dimasic.taskcal.model.domain.Priority
-import inc.dimasic.taskcal.model.domain.Status
+import inc.dimasic.taskcal.domain.model.Priority
+import inc.dimasic.taskcal.ui.screens.TaskListItemUi
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
-import inc.dimasic.taskcal.repository.TaskListItem
 
 private const val VISIBLE_TASK_COUNT = 4
 
 @Composable
 fun TasksSection(
-    tasks: List<TaskListItem>,
+    tasks: List<TaskListItemUi>,
     onSeeAllClick: () -> Unit,
-    onTaskCheckedChange: (TaskListItem) -> Unit,
+    onTaskCheckedChange: (TaskListItemUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val visibleTasks = tasks
-        .sortedByDescending { it.priority.ordinal }
-        .take(VISIBLE_TASK_COUNT)
+    val visibleTasks = tasks.take(VISIBLE_TASK_COUNT)
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -97,11 +94,10 @@ fun TasksSection(
 
 @Composable
 private fun TaskItem(
-    task: TaskListItem,
+    task: TaskListItemUi,
     onCheckedChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDone = task.status == Status.DONE
 
     Row(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -122,7 +118,7 @@ private fun TaskItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        RoundCheckbox(checked = isDone, onCheckedChange = onCheckedChange)
+        RoundCheckbox(checked = task.isDone, onCheckedChange = onCheckedChange)
     }
 }
 

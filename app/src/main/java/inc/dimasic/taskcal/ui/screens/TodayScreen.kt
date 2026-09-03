@@ -34,7 +34,7 @@ fun TodayScreen(
             onSeeAllClick = {
                 // TODO: navigate to Tasks screen
             },
-            onTaskCheckedChange = { task -> viewModel.toggleTaskCompletion(task.occurrenceId) },
+            onTaskCheckedChange = { task -> viewModel.toggleTaskCompletion(task) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),

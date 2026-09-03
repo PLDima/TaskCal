@@ -40,8 +40,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.ui.ActivitiesPeriod
-import inc.dimasic.taskcal.repository.ActivityTotals
+import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
+import inc.dimasic.taskcal.domain.usecase.goalFraction
+import inc.dimasic.taskcal.domain.usecase.goalOvershoot
+import inc.dimasic.taskcal.domain.usecase.goalRemaining
+import inc.dimasic.taskcal.domain.usecase.model.ActivityTotals
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
@@ -223,9 +226,9 @@ private fun ActivityRing(
     caption: String,
     modifier: Modifier = Modifier,
 ) {
-    val fraction = if (goal > 0) (value.toFloat() / goal.toFloat()).coerceIn(0f, 1f) else 0f
-    val remaining = (goal - value).coerceAtLeast(0)
-    val over = (value - goal).coerceAtLeast(0)
+    val fraction = goalFraction(value, goal)
+    val remaining = goalRemaining(value, goal)
+    val over = goalOvershoot(value, goal)
     val percent = (fraction * 100).roundToInt()
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val progressColor = MaterialTheme.colorScheme.primary

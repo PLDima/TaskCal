@@ -3,13 +3,13 @@ package inc.dimasic.taskcal.ui.screens.statistic.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.model.ui.DateRange
-import inc.dimasic.taskcal.model.ui.TasksPeriod
-import inc.dimasic.taskcal.repository.PeriodTaskOccurrences
-import inc.dimasic.taskcal.usecase.TaskStatusBreakdown
-import inc.dimasic.taskcal.usecase.TasksChartPoint
-import inc.dimasic.taskcal.usecase.TasksSummary
-import inc.dimasic.taskcal.usecase.TasksUseCase
+import inc.dimasic.taskcal.domain.model.DateRange
+import inc.dimasic.taskcal.domain.model.TasksPeriod
+import inc.dimasic.taskcal.domain.usecase.TasksUseCase
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
+import inc.dimasic.taskcal.domain.usecase.model.PeriodTaskOccurrences
+import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
+import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,7 +43,7 @@ class TasksStatisticViewModel @Inject constructor(
         tasksUseCase.summaryForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TasksSummary.Empty)
 
-    val onTimeRateChart: StateFlow<List<TasksChartPoint>> =
+    val onTimeRateChart: StateFlow<List<ChartPoint>> =
         tasksUseCase.onTimeRateChartForPeriod(_selectedPeriod, _periodOffset)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import inc.dimasic.taskcal.domain.usecase.goalFraction
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import kotlin.math.roundToInt
@@ -86,7 +87,7 @@ private fun MacroRow(
     modifier: Modifier = Modifier,
 ) {
     val remaining = goal.coerceAtLeast(0.0)
-    val fraction = if (goal > 0) (used / goal).toFloat().coerceIn(0f, 1f) else 0f
+    val fraction = goalFraction(used, goal)
     val percent = (fraction * 100).roundToInt()
 
     Column(

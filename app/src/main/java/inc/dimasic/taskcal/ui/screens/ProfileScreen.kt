@@ -57,10 +57,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import inc.dimasic.taskcal.repository.HealthConnectStatus
+import inc.dimasic.taskcal.domain.model.HealthConnectStatus
+import inc.dimasic.taskcal.domain.usecase.model.ProfileGoals
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-import inc.dimasic.taskcal.usecase.ProfileGoals
 
 private enum class GoalDialog {
     CALORIES,

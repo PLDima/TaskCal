@@ -32,15 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.ui.TasksPeriod
+import inc.dimasic.taskcal.domain.model.TasksPeriod
+import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
+import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
-import inc.dimasic.taskcal.ui.screens.uiViews.ChartPoint
 import inc.dimasic.taskcal.ui.screens.uiViews.ChartSeries
 import inc.dimasic.taskcal.ui.screens.uiViews.CommonChart
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-import inc.dimasic.taskcal.usecase.TaskStatusBreakdown
-import inc.dimasic.taskcal.usecase.TasksSummary
 
 private val ON_TIME_CHART_Y_AXIS_MARKS = listOf(0, 25, 50, 75, 100)
 private const val ON_TIME_CHART_MAX_VALUE = 100
@@ -94,7 +93,7 @@ fun TasksStatisticScreen(
             )
 
             CommonChart(
-                points = onTimeRateChart.map { ChartPoint(label = it.label, values = listOf(it.onTimeRatePercent)) },
+                points = onTimeRateChart,
                 series = listOf(ChartSeries(label = "On time", color = MaterialTheme.colorScheme.primary)),
                 maxValue = ON_TIME_CHART_MAX_VALUE,
                 yAxisMarks = ON_TIME_CHART_Y_AXIS_MARKS,

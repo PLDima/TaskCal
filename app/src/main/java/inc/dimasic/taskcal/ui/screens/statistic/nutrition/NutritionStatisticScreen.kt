@@ -43,10 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import inc.dimasic.taskcal.model.ui.MacroType
-import inc.dimasic.taskcal.model.ui.NutritionPeriod
+import inc.dimasic.taskcal.domain.model.MacroType
+import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
-import inc.dimasic.taskcal.ui.screens.uiViews.ChartPoint
 import inc.dimasic.taskcal.ui.screens.uiViews.ChartSeries
 import inc.dimasic.taskcal.ui.screens.uiViews.CommonChart
 import inc.dimasic.taskcal.ui.theme.ItemBackground
@@ -55,7 +55,6 @@ import inc.dimasic.taskcal.ui.theme.MacroCarbsColor
 import inc.dimasic.taskcal.ui.theme.MacroFatColor
 import inc.dimasic.taskcal.ui.theme.MacroProteinColor
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
-import inc.dimasic.taskcal.usecase.PeriodCaloriesAverages
 
 private const val BALANCE_TINT_ALPHA = 0.12f
 private const val CHART_MAX_CALORIES = 4000
@@ -122,7 +121,7 @@ fun NutritionStatisticScreen(
             )
 
             CommonChart(
-                points = caloriesChart.map { ChartPoint(label = it.label, values = listOf(it.consumed, it.burned)) },
+                points = caloriesChart,
                 series = listOf(
                     ChartSeries(label = "Consumed", color = MaterialTheme.colorScheme.primary),
                     ChartSeries(label = "Burned", color = StatusDoneGreen),
@@ -161,7 +160,7 @@ fun NutritionStatisticScreen(
                 val macro = expandedMacro
                 if (macro != null) {
                     CommonChart(
-                        points = macroChart.map { ChartPoint(label = it.label, values = listOf(it.value)) },
+                        points = macroChart,
                         series = listOf(ChartSeries(label = macro.label, color = macro.color())),
                         maxValue = macro.chartMaxValue,
                         yAxisMarks = macro.yAxisMarks(),
