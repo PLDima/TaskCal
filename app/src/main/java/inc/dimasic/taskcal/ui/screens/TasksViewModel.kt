@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class TasksFilter(val label: String) {
-    ALL("All"),
     ACTIVE("Active"),
     COMPLETED("Completed"),
+    ALL("All"),
 }
 
 @HiltViewModel
@@ -26,7 +26,7 @@ class TasksViewModel @Inject constructor(
     private val tasksUseCase: TasksUseCase,
 ) : ViewModel() {
 
-    private val _selectedFilter = MutableStateFlow(TasksFilter.ALL)
+    private val _selectedFilter = MutableStateFlow(TasksFilter.ACTIVE)
     val selectedFilter: StateFlow<TasksFilter> = _selectedFilter.asStateFlow()
 
     val sections: StateFlow<List<TaskSectionUi>> =
@@ -48,6 +48,12 @@ class TasksViewModel @Inject constructor(
                 occurrenceDate = task.occurrenceDate,
                 completed = !task.isDone,
             )
+        }
+    }
+
+    fun deleteTask(task: TaskListItemUi) {
+        viewModelScope.launch {
+            tasksUseCase.deleteTask(task.taskId)
         }
     }
 }

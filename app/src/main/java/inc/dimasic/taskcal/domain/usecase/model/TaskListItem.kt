@@ -1,6 +1,7 @@
 package inc.dimasic.taskcal.domain.usecase.model
 
 import inc.dimasic.taskcal.domain.model.Priority
+import inc.dimasic.taskcal.domain.model.RecurrenceType
 import inc.dimasic.taskcal.domain.model.TaskState
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -17,6 +18,8 @@ data class TaskListItem(
     val description: String,
     val priority: Priority,
     val state: TaskState,
+    /** How the task recurs; [RecurrenceType.NONE] for a one-off. */
+    val recurrenceType: RecurrenceType,
 ) {
     val date: LocalDate? get() = occurrenceDate?.toLocalDate()
 }

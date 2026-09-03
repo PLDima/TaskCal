@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -29,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import inc.dimasic.taskcal.domain.model.Priority
+import inc.dimasic.taskcal.domain.model.RecurrenceType
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
@@ -56,6 +59,8 @@ fun TasksScreen(
 ) {
     val selectedFilter by viewModel.selectedFilter.collectAsState()
     val sections by viewModel.sections.collectAsState()
+
+    var taskPendingDeletion by remember { mutableStateOf<TaskListItemUi?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -93,6 +98,7 @@ fun TasksScreen(
                             TaskRow(
                                 task = task,
                                 onCheckedChange = { viewModel.toggleTaskCompletion(task) },
+                                onDeleteClick = { taskPendingDeletion = task },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             if (index != section.tasks.lastIndex) {
@@ -114,6 +120,43 @@ fun TasksScreen(
             Icon(imageVector = Icons.Filled.Add, contentDescription = "Add task")
         }
     }
+
+    taskPendingDeletion?.let { task ->
+        DeleteTaskDialog(
+            task = task,
+            onConfirm = {
+                viewModel.deleteTask(task)
+                taskPendingDeletion = null
+            },
+            onDismiss = { taskPendingDeletion = null },
+        )
+    }
+}
+
+@Composable
+private fun DeleteTaskDialog(
+    task: TaskListItemUi,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val message = buildString {
+        append("This can't be undone.")
+        if (task.recurrenceType != RecurrenceType.NONE) {
+            append(" All occurrences of this repeating task will be deleted.")
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete \"${task.title}\"?") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("Delete") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
@@ -166,6 +209,7 @@ private fun FilterTabs(
 private fun TaskRow(
     task: TaskListItemUi,
     onCheckedChange: () -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -205,9 +249,15 @@ private fun TaskRow(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
             ) {
-                // TODO: wire up edit/delete task actions
+                // TODO: wire up edit task action
                 DropdownMenuItem(text = { Text("Edit") }, onClick = { menuExpanded = false })
-                DropdownMenuItem(text = { Text("Delete") }, onClick = { menuExpanded = false })
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        menuExpanded = false
+                        onDeleteClick()
+                    },
+                )
             }
         }
     }

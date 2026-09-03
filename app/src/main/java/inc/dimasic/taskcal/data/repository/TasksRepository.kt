@@ -49,6 +49,11 @@ class TasksRepository @Inject constructor(
         taskDao.upsert(task.toEntity())
     }
 
+    /** Removes a task for good. Its completion receipts are cascaded away by the foreign key. */
+    suspend fun deleteTask(taskId: String) {
+        taskDao.delete(taskId)
+    }
+
     /**
      * Marks one occurrence done or not done. A repeating task gains or loses a [TaskCompletion];
      * anything else just flips [Task.isCompleted], since it has only the one instance.
