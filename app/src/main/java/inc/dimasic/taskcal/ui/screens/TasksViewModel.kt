@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class TasksFilter(val label: String) {
     ALL("All"),
@@ -41,11 +42,13 @@ class TasksViewModel @Inject constructor(
     }
 
     fun toggleTaskCompletion(task: TaskListItemUi) {
-        tasksUseCase.setTaskCompleted(
-            taskId = task.taskId,
-            occurrenceDate = task.occurrenceDate,
-            completed = !task.isDone,
-        )
+        viewModelScope.launch {
+            tasksUseCase.setTaskCompleted(
+                taskId = task.taskId,
+                occurrenceDate = task.occurrenceDate,
+                completed = !task.isDone,
+            )
+        }
     }
 }
 

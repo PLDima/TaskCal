@@ -139,8 +139,8 @@ fun AddTaskScreen(
                     priority = priority,
                     recurrenceType = recurrence,
                     assignedDate = schedule.toDate(pickedDate),
+                    onSaved = onTaskCreated,
                 )
-                onTaskCreated()
             },
             enabled = title.isNotBlank(),
             modifier = Modifier
