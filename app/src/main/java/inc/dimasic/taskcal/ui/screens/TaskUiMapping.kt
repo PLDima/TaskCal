@@ -20,6 +20,7 @@ internal fun TaskListItem.toUi() = TaskListItemUi(
     dateLabel = date.toRelativeLabel(),
     isDone = state == TaskState.DONE,
     priority = priority,
+    recurrenceType = recurrenceType,
 )
 
 internal fun TaskPriorityGroup.toUi() = TaskSectionUi(

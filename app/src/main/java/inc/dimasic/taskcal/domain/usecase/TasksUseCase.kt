@@ -120,6 +120,14 @@ class TasksUseCase @Inject constructor(
     }
 
     /**
+     * Deletes the whole task. For a repeating task that removes every occurrence, since they are
+     * all expanded from the one stored task.
+     */
+    suspend fun deleteTask(taskId: String) {
+        tasksRepository.deleteTask(taskId)
+    }
+
+    /**
      * A repeating task expands from its start date, so it always needs one: asking for a repeat
      * with no date starts the series today rather than creating a task that never comes due.
      */
@@ -176,6 +184,7 @@ private fun Task.toListItem(
     description = description,
     priority = priority,
     state = stateOf(isDoneAt(occurrence, completions), occurrence, now),
+    recurrenceType = recurrenceType,
 )
 
 private fun Task.toStat(
