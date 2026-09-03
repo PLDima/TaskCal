@@ -42,7 +42,8 @@ class TasksUseCase @Inject constructor(
 
     /**
      * Occurrences falling on [date], most important first. Tasks with no date have no deadline,
-     * so they always apply.
+     * so they always apply. Completed occurrences are dropped: the Today list shows only what is
+     * still outstanding.
      */
     fun tasksForDate(date: Flow<LocalDate>): Flow<List<TaskListItem>> =
         combine(tasksRepository.tasks, tasksRepository.completions, date) { tasks, completions, selectedDate ->
@@ -55,7 +56,7 @@ class TasksUseCase @Inject constructor(
                         .firstOrNull()
                         ?.let { task.toListItem(it, completions, now) }
                 }
-            }.byImportance()
+            }.filterNot { it.state == TaskState.DONE }.byImportance()
         }
 
     /**
@@ -114,7 +115,7 @@ class TasksUseCase @Inject constructor(
             }
         }
 
-    fun setTaskCompleted(taskId: String, occurrenceDate: LocalDateTime?, completed: Boolean) {
+    suspend fun setTaskCompleted(taskId: String, occurrenceDate: LocalDateTime?, completed: Boolean) {
         tasksRepository.setCompleted(taskId, occurrenceDate, completed)
     }
 
@@ -122,7 +123,7 @@ class TasksUseCase @Inject constructor(
      * A repeating task expands from its start date, so it always needs one: asking for a repeat
      * with no date starts the series today rather than creating a task that never comes due.
      */
-    fun addTask(
+    suspend fun addTask(
         title: String,
         description: String,
         priority: Priority,

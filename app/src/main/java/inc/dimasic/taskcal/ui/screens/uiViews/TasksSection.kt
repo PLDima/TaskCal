@@ -67,14 +67,26 @@ fun TasksSection(
                 .clip(RoundedCornerShape(12.dp))
                 .background(ItemBackground),
         ) {
-            visibleTasks.forEachIndexed { index, task ->
-                TaskItem(
-                    task = task,
-                    onCheckedChange = { onTaskCheckedChange(task) },
-                    modifier = Modifier.fillMaxWidth(),
+            if (visibleTasks.isEmpty()) {
+                Text(
+                    text = "All done.\nNo assigned tasks!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 24.dp),
                 )
-                if (index != visibleTasks.lastIndex) {
-                    HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
+            } else {
+                visibleTasks.forEachIndexed { index, task ->
+                    TaskItem(
+                        task = task,
+                        onCheckedChange = { onTaskCheckedChange(task) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (index != visibleTasks.lastIndex) {
+                        HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
+                    }
                 }
             }
         }
