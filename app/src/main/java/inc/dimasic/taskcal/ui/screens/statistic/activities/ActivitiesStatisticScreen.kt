@@ -1,5 +1,10 @@
 package inc.dimasic.taskcal.ui.screens.statistic.activities
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -19,12 +24,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,15 +45,22 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import inc.dimasic.taskcal.common.utils.defaultRequestHandler
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
+import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import inc.dimasic.taskcal.domain.usecase.goalFraction
 import inc.dimasic.taskcal.domain.usecase.goalOvershoot
 import inc.dimasic.taskcal.domain.usecase.goalRemaining
 import inc.dimasic.taskcal.domain.usecase.model.ActivityTotals
+import inc.dimasic.taskcal.domain.usecase.model.PeriodActivityTotals
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
@@ -56,9 +72,17 @@ fun ActivitiesStatisticScreen(
     viewModel: ActivitiesStatisticViewModel = hiltViewModel(),
 ) {
     val selectedPeriod by viewModel.selectedPeriod.collectAsState()
-    val dateRangeLabel by viewModel.dateRangeLabel.collectAsState()
-    val totals by viewModel.totals.collectAsState()
-    val characteristics by viewModel.characteristics.collectAsState()
+    val healthConnectStatus by viewModel.healthConnectStatus.collectAsState()
+
+    // Permission is granted through the system Health Connect UI, outside the app, so re-check on resume.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshHealthConnect()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         ActivitiesPeriodTabs(
@@ -67,35 +91,136 @@ fun ActivitiesStatisticScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        PeriodNavigator(
-            dateRangeLabel = dateRangeLabel,
-            onPreviousPeriod = viewModel::showPreviousPeriod,
-            onNextPeriod = viewModel::showNextPeriod,
-            modifier = Modifier.fillMaxWidth(),
+        viewModel.getState().defaultRequestHandler(
+            onSuccess = { periodTotals ->
+                PeriodContent(
+                    periodTotals = periodTotals,
+                    healthConnectStatus = healthConnectStatus,
+                    viewModel = viewModel,
+                    onPreviousPeriod = viewModel::showPreviousPeriod,
+                    onNextPeriod = viewModel::showNextPeriod,
+                    contentModifier = Modifier.weight(1f),
+                )
+            },
         )
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            ActivityRingsRow(
-                totals = totals,
+@Composable
+private fun PeriodContent(
+    periodTotals: PeriodActivityTotals,
+    healthConnectStatus: HealthConnectStatus,
+    viewModel: ActivitiesStatisticViewModel,
+    onPreviousPeriod: () -> Unit,
+    onNextPeriod: () -> Unit,
+    contentModifier: Modifier = Modifier,
+) {
+    PeriodNavigator(
+        dateRangeLabel = periodTotals.dateRange.toLabel(),
+        onPreviousPeriod = onPreviousPeriod,
+        onNextPeriod = onNextPeriod,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Column(
+        modifier = contentModifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        if (healthConnectStatus != HealthConnectStatus.CONNECTED) {
+            HealthConnectPrompt(
+                status = healthConnectStatus,
+                permissions = viewModel.healthConnectPermissions,
+                permissionContract = viewModel.healthConnectPermissionContract,
+                onPermissionResult = viewModel::refreshHealthConnect,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
             )
-
-            CharacteristicsSection(
-                characteristics = characteristics,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-            )
         }
+
+        ActivityRingsRow(
+            totals = periodTotals.totals,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+
+        CharacteristicsSection(
+            characteristics = periodTotals.totals.toCharacteristics(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+        )
     }
 }
+
+@Composable
+private fun HealthConnectPrompt(
+    status: HealthConnectStatus,
+    permissions: Set<String>,
+    permissionContract: ActivityResultContract<Set<String>, Set<String>>,
+    onPermissionResult: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(permissionContract) { onPermissionResult() }
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(ItemBackground)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(),
+                onClick = {
+                    when (status) {
+                        HealthConnectStatus.NOT_CONNECTED -> permissionLauncher.launch(permissions)
+                        HealthConnectStatus.UNAVAILABLE ->
+                            context.startActivitySafely(healthConnectPlayStoreIntent())
+                        HealthConnectStatus.CONNECTED -> Unit
+                    }
+                },
+            )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Connect Health Connect",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = when (status) {
+                    HealthConnectStatus.NOT_CONNECTED -> "Grant permission to see your real activity data."
+                    HealthConnectStatus.UNAVAILABLE -> "Not available on this device. Tap to install."
+                    HealthConnectStatus.CONNECTED -> ""
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun Context.startActivitySafely(intent: Intent) {
+    runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+}
+
+private fun healthConnectPlayStoreIntent(): Intent =
+    Intent(Intent.ACTION_VIEW).apply {
+        setPackage("com.android.vending")
+        data = Uri.parse(
+            "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding",
+        )
+    }
 
 @Composable
 private fun CharacteristicsSection(
