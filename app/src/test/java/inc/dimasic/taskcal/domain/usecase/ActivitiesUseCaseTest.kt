@@ -1,30 +1,24 @@
 package inc.dimasic.taskcal.domain.usecase
 
-import inc.dimasic.taskcal.data.model.DailyActivity
+import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.DateRange
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Characterisation tests for activity aggregation.
+ * The domain rules left in this use case are which dates a period covers and how the recorded
+ * figures measure against the user's goals — Health Connect does the totalling itself, so the use
+ * case no longer sums anything.
  *
- * These assertions were originally written against `ActivitiesRepository.totalsForPeriod`, before
- * summing days and applying goals moved into this use case. They are unchanged, which is what
- * shows the move did not alter any of the figures. [ActivitiesRepository] is now backed by Health
- * Connect, so [FakeActivitiesRepository] stands in for it here with the same days the old mock
- * generator produced.
- *
- * The fake data only covers Monday through today of the current week, so the assertions are
- * written as invariants and relationships rather than fixed numbers.
+ * [FakeActivitiesRepository] stands in for the Health Connect-backed repository, reporting a fixed
+ * total for ranges that have started and nothing for ranges in the future.
  */
 class ActivitiesUseCaseTest {
 
@@ -76,67 +70,44 @@ class ActivitiesUseCaseTest {
     }
 
     @Test
-    fun `week totals are the sum of the individual days`() {
-        val week = totals(ActivitiesPeriod.WEEK, offset = 0)
-        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val todayIndex = ChronoUnit.DAYS.between(monday, LocalDate.now()).toInt()
+    fun `recorded figures are reported as they came back`() {
+        val result = totals(ActivitiesPeriod.DAY, offset = 0).totals
 
-        val days = (0..6).map { dayIndex -> totals(ActivitiesPeriod.DAY, dayIndex - todayIndex).totals }
-
-        assertEquals(days.sumOf { it.caloriesBurned }, week.totals.caloriesBurned)
-        assertEquals(days.sumOf { it.steps }, week.totals.steps)
-        assertEquals(days.sumOf { it.distanceMeters }, week.totals.distanceMeters)
-        assertEquals(days.sumOf { it.activeMinutes }, week.totals.activeMinutes)
+        assertEquals(FakeActivitiesRepository.RECORDED.caloriesBurned, result.caloriesBurned)
+        assertEquals(FakeActivitiesRepository.RECORDED.steps, result.steps)
+        assertEquals(FakeActivitiesRepository.RECORDED.distanceMeters, result.distanceMeters)
+        assertEquals(FakeActivitiesRepository.RECORDED.activeMinutes, result.activeMinutes)
+        assertEquals(FakeActivitiesRepository.RECORDED.avgHeartRate, result.avgHeartRate)
     }
 
     @Test
-    fun `a period with no recorded days reports zeroes`() {
-        // The fake data stops at today, so next week is empty.
+    fun `a period with nothing recorded reports zeroes, and no heart rate at all`() {
+        // The fake has nothing for ranges that haven't started, so next week is empty.
         val result = totals(ActivitiesPeriod.WEEK, offset = 1).totals
 
         assertEquals(0, result.caloriesBurned)
         assertEquals(0, result.steps)
         assertEquals(0, result.distanceMeters)
         assertEquals(0, result.activeMinutes)
-        assertEquals(0, result.avgHeartRate)
-    }
-
-    @Test
-    fun `average heart rate is a mean of the days that have data`() {
-        val week = totals(ActivitiesPeriod.WEEK, offset = 0)
-        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val todayIndex = ChronoUnit.DAYS.between(monday, LocalDate.now()).toInt()
-
-        val recorded = (0..todayIndex)
-            .map { dayIndex -> totals(ActivitiesPeriod.DAY, dayIndex - todayIndex).totals.avgHeartRate }
-            .filter { it > 0 }
-
-        assertTrue(week.totals.avgHeartRate >= recorded.min())
-        assertTrue(week.totals.avgHeartRate <= recorded.max())
+        // Counts can honestly be zero; an average with no samples is absent, not zero.
+        assertNull(result.avgHeartRate)
     }
 }
 
-/** Stands in for the Health Connect-backed repository with a fixed, synthetic week of days. */
+/** Stands in for the Health Connect-backed repository with one fixed total. */
 private class FakeActivitiesRepository : ActivitiesRepository {
 
-    private val days: List<DailyActivity> = run {
-        val today = LocalDate.now()
-        val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        (0..6).mapNotNull { dayIndex ->
-            val date = monday.plusDays(dayIndex.toLong())
-            if (date.isAfter(today)) return@mapNotNull null
-            val steps = 6_500 + (dayIndex * 1_700) % 6_000
-            DailyActivity(
-                date = date,
-                caloriesBurned = 420 + (dayIndex * 130) % 420,
-                steps = steps,
-                distanceMeters = (steps * 0.75).toInt(),
-                activeMinutes = 18 + (dayIndex * 7) % 30,
-                avgHeartRate = 92 + (dayIndex * 4) % 28,
-            )
-        }
-    }
+    override suspend fun activityTotals(range: DateRange): RecordedActivity =
+        if (range.start.isAfter(LocalDate.now())) RecordedActivity.Empty else RECORDED
 
-    override suspend fun dailyActivity(range: DateRange): List<DailyActivity> =
-        days.filter { range.contains(it.date) }
+    companion object {
+        /** Deliberately all different, so a swapped field shows up as a failure. */
+        val RECORDED = RecordedActivity(
+            caloriesBurned = 2_412,
+            steps = 8_310,
+            distanceMeters = 6_240,
+            activeMinutes = 47,
+            avgHeartRate = 96,
+        )
+    }
 }
