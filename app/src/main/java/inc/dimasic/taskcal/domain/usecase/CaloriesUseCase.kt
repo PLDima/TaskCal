@@ -1,6 +1,7 @@
 package inc.dimasic.taskcal.domain.usecase
 
 import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
+import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
@@ -14,15 +15,20 @@ import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val WEEKDAY_LABELS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 private const val MONTH_CHART_BUCKETS = 5
 
-// Deterministic per-weekday mock so the calories-burned chart shows day-to-day variation
-// instead of a flat line, while staying stable across recompositions and app runs.
+// Still mocked, and only for the period paths below. Those need burned calories *per day* — the
+// charts plot a value per bucket and the summary picks a best and worst day — but Health Connect is
+// now read as one total per range, with no per-day breakdown. Wiring these up needs that breakdown
+// back, which is its own decision. The per-date path no longer uses any of this.
 private val MOCK_CALORIES_BURNED_BY_WEEKDAY = listOf(2400, 2700, 2550, 2950, 2650, 3200, 2350)
 
 private fun mockCaloriesBurnedForDate(date: LocalDate): Int =
@@ -51,26 +57,34 @@ private fun MacroType.valueFrom(bucket: NutritionChartBucket): Double = when (th
 
 class CaloriesUseCase @Inject constructor(
     private val foodUseCase: FoodUseCase,
+    private val activitiesRepository: ActivitiesRepository,
     settingsRepository: SettingsRepository,
 ) {
 
     private val userProfile = settingsRepository.userProfile
 
-    fun caloriesForDate(date: Flow<LocalDate>): Flow<CaloriesSummary> =
-        combine(date, foodUseCase.entriesForDate(date), userProfile) { selectedDate, entriesForDate, profile ->
-            val goal = profile.nutritionGoal
-            CaloriesSummary(
-                caloriesUsed = entriesForDate.sumOf { it.calories },
-                caloriesGoal = goal.calories,
-                caloriesBurned = mockCaloriesBurnedForDate(selectedDate),
-                proteinUsed = entriesForDate.sumOf { it.protein },
-                proteinGoal = goal.protein,
-                carbsUsed = entriesForDate.sumOf { it.carbs },
-                carbsGoal = goal.carbs,
-                fatUsed = entriesForDate.sumOf { it.fat },
-                fatGoal = goal.fat,
-            )
-        }
+    /**
+     * One-shot, so a screen can load this together with everything else it shows. The Health
+     * Connect read runs alongside the local ones rather than behind them — it is the slow one.
+     */
+    suspend fun caloriesForDate(date: LocalDate): CaloriesSummary = coroutineScope {
+        val burned = async { activitiesRepository.activityTotals(DateRange(date, date)).caloriesBurned }
+        val entries = async { foodUseCase.entriesForDate(date) }
+        val goal = userProfile.first().nutritionGoal
+
+        val entriesForDate = entries.await()
+        CaloriesSummary(
+            caloriesUsed = entriesForDate.sumOf { it.calories },
+            caloriesGoal = goal.calories,
+            caloriesBurned = burned.await(),
+            proteinUsed = entriesForDate.sumOf { it.protein },
+            proteinGoal = goal.protein,
+            carbsUsed = entriesForDate.sumOf { it.carbs },
+            carbsGoal = goal.carbs,
+            fatUsed = entriesForDate.sumOf { it.fat },
+            fatGoal = goal.fat,
+        )
+    }
 
     fun averagesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodCaloriesAverages> =
         foodUseCase.entriesForPeriod(period, offset).map { periodEntries ->
