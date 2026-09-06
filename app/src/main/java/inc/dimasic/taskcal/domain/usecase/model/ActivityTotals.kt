@@ -10,8 +10,8 @@ data class ActivityTotals(
     val distanceGoalMeters: Int,
     /** Total active minutes over the period; no goal. */
     val activeMinutes: Int,
-    /** Mean of the per-day averages over the period; no goal. */
-    val avgHeartRate: Int,
+    /** Average heart rate across the whole period; null when nothing recorded one. No goal. */
+    val avgHeartRate: Int?,
 ) {
     companion object {
         val Empty = ActivityTotals(
@@ -22,7 +22,7 @@ data class ActivityTotals(
             distanceMeters = 0,
             distanceGoalMeters = 0,
             activeMinutes = 0,
-            avgHeartRate = 0,
+            avgHeartRate = null,
         )
     }
 }

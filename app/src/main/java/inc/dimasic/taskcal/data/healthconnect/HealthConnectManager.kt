@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.aggregate.AggregationResultGroupedByPeriod
+import androidx.health.connect.client.aggregate.AggregationResult
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
@@ -12,14 +12,14 @@ import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.WeightRecord
-import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
+import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import dagger.hilt.android.qualifiers.ApplicationContext
-import inc.dimasic.taskcal.data.model.DailyActivity
+import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.domain.model.DateRange
-import java.time.Period
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToInt
 
 /** Whether the Health Connect provider can be used on this device. */
 enum class HealthConnectAvailability {
@@ -41,6 +41,12 @@ enum class HealthConnectAvailability {
 class HealthConnectManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+
+    /**
+     * Only touched once availability is known to be [HealthConnectAvailability.INSTALLED] —
+     * [HealthConnectClient.getOrCreate] throws otherwise.
+     */
+    private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
     /**
      * Read permissions the app asks for: steps, active minutes, weight, distance, heart rate and
@@ -70,29 +76,37 @@ class HealthConnectManager @Inject constructor(
     /** True only when the provider is installed and every permission in [permissions] is granted. */
     suspend fun hasAllPermissions(): Boolean {
         if (availability != HealthConnectAvailability.INSTALLED) return false
-        val granted = HealthConnectClient.getOrCreate(context).permissionController.getGrantedPermissions()
-        return granted.containsAll(permissions)
+        return client.permissionController.getGrantedPermissions().containsAll(permissions)
     }
 
     /**
-     * One [DailyActivity] per day in [range] that has any recorded data; days with nothing
-     * recorded produce no entry. Empty, with no Health Connect call made, unless every permission
-     * in [permissions] is granted.
+     * Everything recorded across the whole of [range], in one aggregate call.
+     *
+     * Asking Health Connect for the period total is deliberate: bucketing by day and summing the
+     * buckets ourselves is not guaranteed to give the same figure, because records straddling
+     * midnight go through Health Connect's own apportioning first.
+     *
+     * Returns [RecordedActivity.Empty] rather than throwing when Health Connect is unavailable or
+     * the permissions have not been granted — the screens surface that state through
+     * [inc.dimasic.taskcal.domain.model.HealthConnectStatus] and their connect prompt, not as an
+     * error.
      */
-    suspend fun dailyActivity(range: DateRange): List<DailyActivity> {
-        if (!hasAllPermissions()) return emptyList()
+    suspend fun activityTotals(range: DateRange): RecordedActivity {
+        if (availability != HealthConnectAvailability.INSTALLED) return RecordedActivity.Empty
 
-        val buckets = HealthConnectClient.getOrCreate(context).aggregateGroupByPeriod(
-            AggregateGroupByPeriodRequest(
-                metrics = AGGREGATED_METRICS,
-                timeRangeFilter = TimeRangeFilter.between(
-                    range.start.atStartOfDay(),
-                    range.end.plusDays(1).atStartOfDay(),
+        return try {
+            client.aggregate(
+                AggregateRequest(
+                    metrics = AGGREGATED_METRICS,
+                    timeRangeFilter = TimeRangeFilter.between(
+                        range.start.atStartOfDay(),
+                        range.end.plusDays(1).atStartOfDay(),
+                    ),
                 ),
-                timeRangeSlicer = Period.ofDays(1),
-            ),
-        )
-        return buckets.map { it.toDailyActivity() }
+            ).toRecordedActivity()
+        } catch (e: SecurityException) {
+            RecordedActivity.Empty
+        }
     }
 
     private companion object {
@@ -106,11 +120,11 @@ class HealthConnectManager @Inject constructor(
     }
 }
 
-private fun AggregationResultGroupedByPeriod.toDailyActivity() = DailyActivity(
-    date = startTime.toLocalDate(),
-    caloriesBurned = (result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories ?: 0.0).toInt(),
-    steps = (result[StepsRecord.COUNT_TOTAL] ?: 0L).toInt(),
-    distanceMeters = (result[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0).toInt(),
-    activeMinutes = (result[ExerciseSessionRecord.EXERCISE_DURATION_TOTAL]?.toMinutes() ?: 0L).toInt(),
-    avgHeartRate = (result[HeartRateRecord.BPM_AVG] ?: 0L).toInt(),
+/** A metric with no records contributing to it comes back absent rather than zero. */
+private fun AggregationResult.toRecordedActivity() = RecordedActivity(
+    caloriesBurned = (this[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories ?: 0.0).roundToInt(),
+    steps = (this[StepsRecord.COUNT_TOTAL] ?: 0L).toInt(),
+    distanceMeters = (this[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0).roundToInt(),
+    activeMinutes = (this[ExerciseSessionRecord.EXERCISE_DURATION_TOTAL]?.toMinutes() ?: 0L).toInt(),
+    avgHeartRate = this[HeartRateRecord.BPM_AVG]?.toInt(),
 )

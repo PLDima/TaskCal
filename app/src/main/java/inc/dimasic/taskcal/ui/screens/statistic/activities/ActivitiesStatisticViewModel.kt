@@ -85,7 +85,7 @@ fun DateRange.toLabel(): String =
         "${start.format(rangeLabelFormatter)} - ${end.format(rangeLabelFormatter)}"
     }
 
-fun ActivityTotals.toCharacteristics(): List<ActivityCharacteristic> = listOf(
+fun ActivityTotals.toCharacteristics(): List<ActivityCharacteristic> = listOfNotNull(
     goalCharacteristic("Steps", steps, stepsGoal) { "%,d".format(it) },
     goalCharacteristic("Calories burned", caloriesBurned, caloriesGoal) { "%,d kcal".format(it) },
     goalCharacteristic("Distance", distanceMeters, distanceGoalMeters) { "%.1f km".format(it / 1000.0) },
@@ -95,12 +95,15 @@ fun ActivityTotals.toCharacteristics(): List<ActivityCharacteristic> = listOf(
         goalPercent = null,
         fraction = null,
     ),
-    ActivityCharacteristic(
-        title = "Average heart rate",
-        valueLabel = "$avgHeartRate bpm",
-        goalPercent = null,
-        fraction = null,
-    ),
+    // A period nothing measured a heart rate over drops the row entirely, rather than claiming 0 bpm.
+    avgHeartRate?.let { bpm ->
+        ActivityCharacteristic(
+            title = "Average heart rate",
+            valueLabel = "$bpm bpm",
+            goalPercent = null,
+            fraction = null,
+        )
+    },
 )
 
 /** Formats one metric for display; how far along the goal it is comes from the domain layer. */

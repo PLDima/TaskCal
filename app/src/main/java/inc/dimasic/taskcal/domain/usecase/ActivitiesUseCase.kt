@@ -29,21 +29,20 @@ class ActivitiesUseCase @Inject constructor(
      */
     suspend fun totalsForPeriod(period: ActivitiesPeriod, offset: Int): PeriodActivityTotals {
         val range = period.dateRangeAt(offset)
-        val days = activitiesRepository.dailyActivity(range)
+        val recorded = activitiesRepository.activityTotals(range)
         val profile = userProfile.first()
-        val inRange = days.filter { range.contains(it.date) }
 
         return PeriodActivityTotals(
             dateRange = range,
             totals = ActivityTotals(
-                caloriesBurned = inRange.sumOf { it.caloriesBurned },
+                caloriesBurned = recorded.caloriesBurned,
                 caloriesGoal = profile.nutritionGoal.calories * range.dayCount,
-                steps = inRange.sumOf { it.steps },
+                steps = recorded.steps,
                 stepsGoal = profile.stepsGoal * range.dayCount,
-                distanceMeters = inRange.sumOf { it.distanceMeters },
+                distanceMeters = recorded.distanceMeters,
                 distanceGoalMeters = DAILY_DISTANCE_GOAL_METERS * range.dayCount,
-                activeMinutes = inRange.sumOf { it.activeMinutes },
-                avgHeartRate = if (inRange.isEmpty()) 0 else inRange.sumOf { it.avgHeartRate } / inRange.size,
+                activeMinutes = recorded.activeMinutes,
+                avgHeartRate = recorded.avgHeartRate,
             ),
         )
     }
