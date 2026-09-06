@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +60,10 @@ fun TasksScreen(
 ) {
     val selectedFilter by viewModel.selectedFilter.collectAsState()
     val sections by viewModel.sections.collectAsState()
+
+    // The ViewModel is activity-scoped, so it outlives this screen. Reset to Active every time the
+    // screen is opened rather than showing whichever tab was left selected last time.
+    LaunchedEffect(Unit) { viewModel.selectFilter(TasksFilter.ACTIVE) }
 
     var taskPendingDeletion by remember { mutableStateOf<TaskListItemUi?>(null) }
 

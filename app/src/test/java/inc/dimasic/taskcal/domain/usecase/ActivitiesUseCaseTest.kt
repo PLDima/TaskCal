@@ -1,14 +1,15 @@
 package inc.dimasic.taskcal.domain.usecase
 
+import inc.dimasic.taskcal.data.model.DailyActivity
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
-import inc.dimasic.taskcal.firstValue
+import inc.dimasic.taskcal.domain.model.DateRange
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,17 +19,19 @@ import org.junit.Test
  *
  * These assertions were originally written against `ActivitiesRepository.totalsForPeriod`, before
  * summing days and applying goals moved into this use case. They are unchanged, which is what
- * shows the move did not alter any of the figures.
+ * shows the move did not alter any of the figures. [ActivitiesRepository] is now backed by Health
+ * Connect, so [FakeActivitiesRepository] stands in for it here with the same days the old mock
+ * generator produced.
  *
- * The mock data only covers Monday through today of the current week, so the assertions are
+ * The fake data only covers Monday through today of the current week, so the assertions are
  * written as invariants and relationships rather than fixed numbers.
  */
 class ActivitiesUseCaseTest {
 
-    private val useCase = ActivitiesUseCase(ActivitiesRepository(), SettingsRepository())
+    private val useCase = ActivitiesUseCase(FakeActivitiesRepository(), SettingsRepository())
 
     private fun totals(period: ActivitiesPeriod, offset: Int) =
-        useCase.totalsForPeriod(flowOf(period), flowOf(offset)).firstValue()
+        runBlocking { useCase.totalsForPeriod(period, offset) }
 
     @Test
     fun `day period covers exactly one day`() {
@@ -62,12 +65,12 @@ class ActivitiesUseCaseTest {
         val day = totals(ActivitiesPeriod.DAY, offset = 0).totals
         val week = totals(ActivitiesPeriod.WEEK, offset = 0).totals
 
-        // 600 kcal and 5km are domain defaults; the step goal comes from the user's profile.
-        assertEquals(600, day.caloriesGoal)
+        // 5km is a domain default; the calorie and step goals come from the user's profile.
+        assertEquals(3_000, day.caloriesGoal)
         assertEquals(10_000, day.stepsGoal)
         assertEquals(5_000, day.distanceGoalMeters)
 
-        assertEquals(600 * 7, week.caloriesGoal)
+        assertEquals(3_000 * 7, week.caloriesGoal)
         assertEquals(10_000 * 7, week.stepsGoal)
         assertEquals(5_000 * 7, week.distanceGoalMeters)
     }
@@ -88,7 +91,7 @@ class ActivitiesUseCaseTest {
 
     @Test
     fun `a period with no recorded days reports zeroes`() {
-        // The mock data stops at today, so next week is empty.
+        // The fake data stops at today, so next week is empty.
         val result = totals(ActivitiesPeriod.WEEK, offset = 1).totals
 
         assertEquals(0, result.caloriesBurned)
@@ -111,4 +114,29 @@ class ActivitiesUseCaseTest {
         assertTrue(week.totals.avgHeartRate >= recorded.min())
         assertTrue(week.totals.avgHeartRate <= recorded.max())
     }
+}
+
+/** Stands in for the Health Connect-backed repository with a fixed, synthetic week of days. */
+private class FakeActivitiesRepository : ActivitiesRepository {
+
+    private val days: List<DailyActivity> = run {
+        val today = LocalDate.now()
+        val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        (0..6).mapNotNull { dayIndex ->
+            val date = monday.plusDays(dayIndex.toLong())
+            if (date.isAfter(today)) return@mapNotNull null
+            val steps = 6_500 + (dayIndex * 1_700) % 6_000
+            DailyActivity(
+                date = date,
+                caloriesBurned = 420 + (dayIndex * 130) % 420,
+                steps = steps,
+                distanceMeters = (steps * 0.75).toInt(),
+                activeMinutes = 18 + (dayIndex * 7) % 30,
+                avgHeartRate = 92 + (dayIndex * 4) % 28,
+            )
+        }
+    }
+
+    override suspend fun dailyActivity(range: DateRange): List<DailyActivity> =
+        days.filter { range.contains(it.date) }
 }
