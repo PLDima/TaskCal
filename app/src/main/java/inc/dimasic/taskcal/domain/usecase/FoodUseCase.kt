@@ -19,10 +19,9 @@ class FoodUseCase @Inject constructor(
     private val foodRepository: FoodRepository,
 ) {
 
-    fun entriesForDate(date: Flow<LocalDate>): Flow<List<FoodEntry>> =
-        combine(foodRepository.foodEntries, date) { entries, selectedDate ->
-            entries.filter { it.date == selectedDate }
-        }
+    /** One-shot: the day screens load this alongside their other reads and show the lot together. */
+    suspend fun entriesForDate(date: LocalDate): List<FoodEntry> =
+        foodRepository.entriesForDate(date)
 
     fun entriesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodFoodEntries> =
         combine(foodRepository.foodEntries, period, offset) { entries, selectedPeriod, selectedOffset ->
@@ -31,11 +30,10 @@ class FoodUseCase @Inject constructor(
         }
 
     /** A day's entries grouped by meal, in eating order. Meals with nothing logged are left out. */
-    fun mealsForDate(date: Flow<LocalDate>): Flow<List<MealGroup>> =
-        entriesForDate(date).map { entries ->
-            val byMeal = entries.groupBy { it.mealType }
-            MEAL_ORDER.mapNotNull { mealType ->
-                byMeal[mealType]?.let { MealGroup(mealType = mealType, entries = it) }
-            }
+    suspend fun mealsForDate(date: LocalDate): List<MealGroup> {
+        val byMeal = entriesForDate(date).groupBy { it.mealType }
+        return MEAL_ORDER.mapNotNull { mealType ->
+            byMeal[mealType]?.let { MealGroup(mealType = mealType, entries = it) }
         }
+    }
 }

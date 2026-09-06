@@ -31,7 +31,7 @@ class TodayViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val caloriesForSelectedDate: StateFlow<CaloriesSummary> =
-        caloriesUseCase.caloriesForDate(_selectedDate)
+        _selectedDate.map { caloriesUseCase.caloriesForDate(it) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CaloriesSummary.Empty)
 
     fun selectDate(date: LocalDate) {
