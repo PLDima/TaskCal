@@ -31,7 +31,12 @@ class FoodRepository @Inject constructor(
     suspend fun entriesForDate(date: LocalDate): List<FoodEntry> =
         foodEntryDao.forDate(date.toString()).map { it.toDomain() }
 
-    suspend fun addEntry(entry: FoodEntry) {
+    /** Writes the entry, replacing whatever is stored under the same [FoodEntry.id]. */
+    suspend fun saveEntry(entry: FoodEntry) {
         foodEntryDao.upsert(entry.toEntity())
+    }
+
+    suspend fun deleteEntry(id: String) {
+        foodEntryDao.delete(id)
     }
 }

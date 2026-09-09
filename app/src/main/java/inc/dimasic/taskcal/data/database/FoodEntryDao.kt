@@ -16,6 +16,10 @@ interface FoodEntryDao {
     @Query("SELECT * FROM food_entries WHERE date = :date")
     suspend fun forDate(date: String): List<FoodEntryEntity>
 
+    /** Writing a row whose id already exists replaces it, so this covers editing too. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entry: FoodEntryEntity)
+
+    @Query("DELETE FROM food_entries WHERE id = :id")
+    suspend fun delete(id: String)
 }

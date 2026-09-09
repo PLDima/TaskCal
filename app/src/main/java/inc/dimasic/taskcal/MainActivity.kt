@@ -26,11 +26,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import inc.dimasic.taskcal.ui.AppTopBar
 import inc.dimasic.taskcal.ui.BottomBar
 import inc.dimasic.taskcal.ui.BottomTab
-import inc.dimasic.taskcal.ui.screens.AddTaskScreen
-import inc.dimasic.taskcal.ui.screens.FoodScreen
-import inc.dimasic.taskcal.ui.screens.ProfileScreen
-import inc.dimasic.taskcal.ui.screens.TasksScreen
-import inc.dimasic.taskcal.ui.screens.TodayScreen
+import inc.dimasic.taskcal.ui.screens.tasks.AddTaskScreen
+import inc.dimasic.taskcal.ui.screens.food.FoodScreen
+import inc.dimasic.taskcal.ui.screens.profile.ProfileScreen
+import inc.dimasic.taskcal.ui.screens.tasks.TasksScreen
+import inc.dimasic.taskcal.ui.screens.today.TodayScreen
 import inc.dimasic.taskcal.ui.screens.statistic.StatisticScreen
 import inc.dimasic.taskcal.ui.theme.TaskCalTheme
 

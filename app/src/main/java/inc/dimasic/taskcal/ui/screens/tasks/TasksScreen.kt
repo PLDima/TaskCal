@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.tasks
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background

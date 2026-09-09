@@ -1,8 +1,6 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.food
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,7 +64,7 @@ fun FoodScreen(
     // was loaded last time.
     LaunchedEffect(Unit) { viewModel.refresh() }
 
-    var showLogMealDialog by remember { mutableStateOf(false) }
+    var mealDialog by remember { mutableStateOf<MealDialogTarget?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -80,13 +76,18 @@ fun FoodScreen(
 
             viewModel.getState().defaultRequestHandler(
                 onSuccess = { day ->
-                    DayContent(day = day, modifier = Modifier.weight(1f))
+                    FoodDayContent(
+                        foodDay = day,
+                        onEditEntry = { entry -> mealDialog = MealDialogTarget.Existing(entry) },
+                        onDeleteEntry = { entry -> viewModel.deleteMeal(entry.id) },
+                        modifier = Modifier.weight(1f),
+                    )
                 },
             )
         }
 
         FloatingActionButton(
-            onClick = { showLogMealDialog = true },
+            onClick = { mealDialog = MealDialogTarget.New },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
@@ -95,43 +96,58 @@ fun FoodScreen(
         }
     }
 
-    if (showLogMealDialog) {
+    mealDialog?.let { target ->
+        val editing = (target as? MealDialogTarget.Existing)?.entry
         LogMealDialog(
+            entry = editing,
             onConfirm = { type, name, calories, protein, carbs, fat ->
-                viewModel.logMeal(
+                viewModel.saveMeal(
+                    // Reusing the id is what turns the save into an edit of the same row.
+                    id = editing?.id,
                     mealType = type,
                     name = name,
                     calories = calories,
                     protein = protein,
                     carbs = carbs,
                     fat = fat,
-                    onSaved = { showLogMealDialog = false },
+                    onSaved = { mealDialog = null },
                 )
             },
-            onDismiss = { showLogMealDialog = false },
+            onDismiss = { mealDialog = null },
         )
     }
 }
 
+/**
+ * What the meal dialog is open for. Null is closed — a plain nullable entry could not tell "closed"
+ * apart from "open to log something new", since both carry no entry.
+ */
+private sealed interface MealDialogTarget {
+    data object New : MealDialogTarget
+    data class Existing(val entry: FoodEntryUi) : MealDialogTarget
+}
+
 @Composable
 private fun LogMealDialog(
+    entry: FoodEntryUi?,
     onConfirm: (MealType, String, Int, Double, Double, Double) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // The button carries no meal context, so the dialog opens on the first meal and the user picks.
-    var mealType by remember { mutableStateOf(MealType.BREAKFAST) }
-    var name by remember { mutableStateOf("") }
-    var calories by remember { mutableStateOf("") }
-    var protein by remember { mutableStateOf("") }
-    var carbs by remember { mutableStateOf("") }
-    var fat by remember { mutableStateOf("") }
+    // Prefilled when editing. A new entry carries no meal context, so it opens on the first meal
+    // and the user picks. Only composed while open, so these initialisers re-run on each open.
+    var mealType by remember { mutableStateOf(entry?.mealType ?: MealType.BREAKFAST) }
+    var name by remember { mutableStateOf(entry?.name.orEmpty()) }
+    var calories by remember { mutableStateOf(entry?.calories?.toString().orEmpty()) }
+    var protein by remember { mutableStateOf(entry?.protein?.toInputText().orEmpty()) }
+    var carbs by remember { mutableStateOf(entry?.carbs?.toInputText().orEmpty()) }
+    var fat by remember { mutableStateOf(entry?.fat?.toInputText().orEmpty()) }
 
     val parsedCalories = calories.toIntOrNull()
     val canSave = name.isNotBlank() && parsedCalories != null && parsedCalories > 0
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Log meal") },
+        title = { Text(if (entry == null) "Log meal" else "Edit meal") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -184,6 +200,10 @@ private fun LogMealDialog(
     )
 }
 
+/** A whole number reads better as "45" than "45.0" in an input field; real fractions keep theirs. */
+private fun Double.toInputText(): String =
+    if (this % 1.0 == 0.0) toInt().toString() else toString()
+
 @Composable
 private fun MacroField(value: String, onValueChange: (String) -> Unit, label: String) {
     OutlinedTextField(
@@ -200,8 +220,10 @@ private fun MacroField(value: String, onValueChange: (String) -> Unit, label: St
 }
 
 @Composable
-private fun DayContent(
-    day: FoodDayUi,
+private fun FoodDayContent(
+    foodDay: FoodDayUi,
+    onEditEntry: (FoodEntryUi) -> Unit,
+    onDeleteEntry: (FoodEntryUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -215,17 +237,17 @@ private fun DayContent(
         item {
             Column(modifier = Modifier.fillMaxWidth()) {
                 CaloriesTotalsRow(
-                    used = day.calories.caloriesUsed,
-                    goal = day.calories.caloriesGoal,
+                    used = foodDay.calories.caloriesUsed,
+                    goal = foodDay.calories.caloriesGoal,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 MacroBreakdownRow(
-                    proteinUsed = day.calories.proteinUsed,
-                    proteinGoal = day.calories.proteinGoal,
-                    fatUsed = day.calories.fatUsed,
-                    fatGoal = day.calories.fatGoal,
-                    carbsUsed = day.calories.carbsUsed,
-                    carbsGoal = day.calories.carbsGoal,
+                    proteinUsed = foodDay.calories.proteinUsed,
+                    proteinGoal = foodDay.calories.proteinGoal,
+                    fatUsed = foodDay.calories.fatUsed,
+                    fatGoal = foodDay.calories.fatGoal,
+                    carbsUsed = foodDay.calories.carbsUsed,
+                    carbsGoal = foodDay.calories.carbsGoal,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 14.dp),
@@ -233,7 +255,7 @@ private fun DayContent(
             }
         }
 
-        if (day.mealSections.isEmpty()) {
+        if (foodDay.mealSections.isEmpty()) {
             item {
                 Text(
                     text = "Nothing logged yet.\nAdd a meal to start tracking.",
@@ -249,7 +271,7 @@ private fun DayContent(
             }
         }
 
-        day.mealSections.forEach { section ->
+        foodDay.mealSections.forEach { section ->
             item {
                 Text(
                     text = section.title,
@@ -268,6 +290,8 @@ private fun DayContent(
                     section.entries.forEachIndexed { index, entry ->
                         FoodEntryRow(
                             entry = entry,
+                            onEdit = { onEditEntry(entry) },
+                            onDelete = { onDeleteEntry(entry) },
                             modifier = Modifier.fillMaxWidth(),
                         )
                         // Dividers go between rows only — nothing follows the last one now that
@@ -285,6 +309,8 @@ private fun DayContent(
 @Composable
 private fun FoodEntryRow(
     entry: FoodEntryUi,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -315,9 +341,20 @@ private fun FoodEntryRow(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
             ) {
-                // TODO: wire up edit/delete food entry actions
-                DropdownMenuItem(text = { Text("Edit") }, onClick = { menuExpanded = false })
-                DropdownMenuItem(text = { Text("Delete") }, onClick = { menuExpanded = false })
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        menuExpanded = false
+                        onEdit()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        menuExpanded = false
+                        onDelete()
+                    },
+                )
             }
         }
     }

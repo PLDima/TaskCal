@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.food
 
 import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
 

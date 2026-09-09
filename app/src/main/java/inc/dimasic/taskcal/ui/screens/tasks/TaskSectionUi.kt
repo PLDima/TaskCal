@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.tasks
 
 /** One priority block on the Tasks screen, with its heading already worded. */
 data class TaskSectionUi(

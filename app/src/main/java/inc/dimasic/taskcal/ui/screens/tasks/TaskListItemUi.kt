@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.tasks
 
 import inc.dimasic.taskcal.domain.model.Priority
 import inc.dimasic.taskcal.domain.model.RecurrenceType
