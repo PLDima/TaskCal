@@ -29,6 +29,29 @@ class FoodUseCase @Inject constructor(
             PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
         }
 
+    /** Logs one item against [date], which is the day being viewed rather than necessarily today. */
+    suspend fun addEntry(
+        date: LocalDate,
+        mealType: MealType,
+        name: String,
+        calories: Int,
+        protein: Double,
+        carbs: Double,
+        fat: Double,
+    ) {
+        foodRepository.addEntry(
+            FoodEntry(
+                date = date,
+                mealType = mealType,
+                calories = calories,
+                protein = protein,
+                carbs = carbs,
+                fat = fat,
+                note = name,
+            ),
+        )
+    }
+
     /** A day's entries grouped by meal, in eating order. Meals with nothing logged are left out. */
     suspend fun mealsForDate(date: LocalDate): List<MealGroup> {
         val byMeal = entriesForDate(date).groupBy { it.mealType }

@@ -1,5 +1,6 @@
 package inc.dimasic.taskcal.ui.screens
 
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.common.CommonViewModel
 import inc.dimasic.taskcal.domain.model.MealType
@@ -14,6 +15,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class FoodViewModel @Inject constructor(
@@ -27,6 +29,38 @@ class FoodViewModel @Inject constructor(
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
         refresh()
+    }
+
+    /**
+     * Logs an item against the day currently being viewed, then reloads. [onSaved] fires once the
+     * write has landed, so the dialog dismisses only after the entry exists.
+     *
+     * Deliberately not routed through `launchRequest`: saving a row is not this screen's content
+     * load, and putting it there would throw the whole screen behind the blocking loading dialog.
+     * The `refresh()` that follows is what legitimately shows it.
+     */
+    fun logMeal(
+        mealType: MealType,
+        name: String,
+        calories: Int,
+        protein: Double,
+        carbs: Double,
+        fat: Double,
+        onSaved: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            foodUseCase.addEntry(
+                date = _selectedDate.value,
+                mealType = mealType,
+                name = name,
+                calories = calories,
+                protein = protein,
+                carbs = carbs,
+                fat = fat,
+            )
+            onSaved()
+            refresh()
+        }
     }
 
     /**
@@ -58,7 +92,6 @@ private val MealType.sectionTitle: String
 
 private fun MealGroup.toUi() = MealSectionUi(
     title = mealType.sectionTitle,
-    addLabel = "Add ${mealType.label.lowercase()}",
     entries = entries.map { entry ->
         FoodEntryUi(
             name = entry.note,
