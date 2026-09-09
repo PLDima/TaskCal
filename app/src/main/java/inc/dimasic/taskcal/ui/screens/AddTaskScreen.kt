@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import inc.dimasic.taskcal.domain.model.Priority
 import inc.dimasic.taskcal.domain.model.RecurrenceType
+import inc.dimasic.taskcal.ui.screens.uiViews.ChoiceGroup
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -187,56 +188,3 @@ private fun LocalDate.toUtcMillis(): Long =
 
 private fun Long.toUtcLocalDate(): LocalDate =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
-
-@Composable
-private fun <T> ChoiceGroup(
-    label: String,
-    options: List<T>,
-    selected: T,
-    optionLabel: (T) -> String,
-    onSelected: (T) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            options.forEach { option ->
-                val isSelected = option == selected
-                Text(
-                    text = optionLabel(option),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            if (isSelected) {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(),
-                            onClick = { onSelected(option) },
-                        )
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                )
-            }
-        }
-    }
-}

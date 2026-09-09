@@ -6,19 +6,26 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,11 +42,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import inc.dimasic.taskcal.common.utils.defaultRequestHandler
+import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.ui.screens.uiViews.CaloriesTotalsRow
+import inc.dimasic.taskcal.ui.screens.uiViews.ChoiceGroup
 import inc.dimasic.taskcal.ui.screens.uiViews.MacroBreakdownRow
 import inc.dimasic.taskcal.ui.screens.uiViews.WeekDatesRow
 import inc.dimasic.taskcal.ui.theme.ItemBackground
@@ -57,27 +68,148 @@ fun FoodScreen(
     // was loaded last time.
     LaunchedEffect(Unit) { viewModel.refresh() }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        WeekDatesRow(
-            selectedDate = selectedDate,
-            onDateSelected = viewModel::selectDate,
-            modifier = Modifier.fillMaxWidth(),
-        )
+    var showLogMealDialog by remember { mutableStateOf(false) }
 
-        viewModel.getState().defaultRequestHandler(
-            onSuccess = { day ->
-                DayContent(day = day, modifier = Modifier.weight(1f))
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            WeekDatesRow(
+                selectedDate = selectedDate,
+                onDateSelected = viewModel::selectDate,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            viewModel.getState().defaultRequestHandler(
+                onSuccess = { day ->
+                    DayContent(day = day, modifier = Modifier.weight(1f))
+                },
+            )
+        }
+
+        FloatingActionButton(
+            onClick = { showLogMealDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(imageVector = Icons.Filled.Add, contentDescription = "Log meal")
+        }
+    }
+
+    if (showLogMealDialog) {
+        LogMealDialog(
+            onConfirm = { type, name, calories, protein, carbs, fat ->
+                viewModel.logMeal(
+                    mealType = type,
+                    name = name,
+                    calories = calories,
+                    protein = protein,
+                    carbs = carbs,
+                    fat = fat,
+                    onSaved = { showLogMealDialog = false },
+                )
             },
+            onDismiss = { showLogMealDialog = false },
         )
     }
 }
 
 @Composable
-private fun DayContent(day: FoodDayUi, modifier: Modifier = Modifier) {
+private fun LogMealDialog(
+    onConfirm: (MealType, String, Int, Double, Double, Double) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    // The button carries no meal context, so the dialog opens on the first meal and the user picks.
+    var mealType by remember { mutableStateOf(MealType.BREAKFAST) }
+    var name by remember { mutableStateOf("") }
+    var calories by remember { mutableStateOf("") }
+    var protein by remember { mutableStateOf("") }
+    var carbs by remember { mutableStateOf("") }
+    var fat by remember { mutableStateOf("") }
+
+    val parsedCalories = calories.toIntOrNull()
+    val canSave = name.isNotBlank() && parsedCalories != null && parsedCalories > 0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Log meal") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                MacroField(value = calories, onValueChange = { calories = it }, label = "Calories (kcal)")
+                MacroField(value = protein, onValueChange = { protein = it }, label = "Protein (g)")
+                MacroField(value = carbs, onValueChange = { carbs = it }, label = "Carbs (g)")
+                MacroField(value = fat, onValueChange = { fat = it }, label = "Fat (g)")
+
+                ChoiceGroup(
+                    label = "Meal",
+                    options = MealType.entries,
+                    selected = mealType,
+                    optionLabel = { it.label },
+                    onSelected = { mealType = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    // Guarded by `canSave`, so calories has already parsed. A blank macro is a
+                    // zero rather than a reason to block the save.
+                    onConfirm(
+                        mealType,
+                        name.trim(),
+                        parsedCalories ?: 0,
+                        protein.toDoubleOrNull() ?: 0.0,
+                        carbs.toDoubleOrNull() ?: 0.0,
+                        fat.toDoubleOrNull() ?: 0.0,
+                    )
+                },
+                enabled = canSave,
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun MacroField(value: String, onValueChange: (String) -> Unit, label: String) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+            imeAction = ImeAction.Next,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun DayContent(
+    day: FoodDayUi,
+    modifier: Modifier = Modifier,
+) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 16.dp),
+        // Enough room to scroll the last row clear of the floating button.
+        contentPadding = PaddingValues(bottom = 88.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
@@ -103,31 +235,17 @@ private fun DayContent(day: FoodDayUi, modifier: Modifier = Modifier) {
 
         if (day.mealSections.isEmpty()) {
             item {
-                Column(
+                Text(
+                    text = "Nothing logged yet.\nAdd a meal to start tracking.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
                         .background(ItemBackground)
                         .padding(horizontal = 12.dp, vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    // The per-meal add rows only exist once a meal section does, so with nothing
-                    // logged this is the only way in.
-                    Button(
-                        onClick = {
-                            // TODO: add food entry logic
-                        },
-                    ) {
-                        Text(text = "Log meal")
-                    }
-                    Text(
-                        text = "Nothing logged yet.\nAdd a meal to start tracking.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                )
             }
         }
 
@@ -147,20 +265,17 @@ private fun DayContent(day: FoodDayUi, modifier: Modifier = Modifier) {
                         .clip(RoundedCornerShape(12.dp))
                         .background(ItemBackground),
                 ) {
-                    section.entries.forEach { entry ->
+                    section.entries.forEachIndexed { index, entry ->
                         FoodEntryRow(
                             entry = entry,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
+                        // Dividers go between rows only — nothing follows the last one now that
+                        // the add row is gone.
+                        if (index != section.entries.lastIndex) {
+                            HorizontalDivider(color = ItemSplitter, thickness = 1.dp)
+                        }
                     }
-                    AddFoodRow(
-                        label = section.addLabel,
-                        onClick = {
-                            // TODO: add food entry logic
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
             }
         }
@@ -205,36 +320,5 @@ private fun FoodEntryRow(
                 DropdownMenuItem(text = { Text("Delete") }, onClick = { menuExpanded = false })
             }
         }
-    }
-}
-
-@Composable
-private fun AddFoodRow(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(),
-                onClick = onClick,
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Add,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
     }
 }

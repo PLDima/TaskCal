@@ -2,6 +2,7 @@ package inc.dimasic.taskcal.data.repository
 
 import inc.dimasic.taskcal.data.database.FoodEntryDao
 import inc.dimasic.taskcal.data.database.toDomain
+import inc.dimasic.taskcal.data.database.toEntity
 import inc.dimasic.taskcal.domain.model.FoodEntry
 import java.time.LocalDate
 import javax.inject.Inject
@@ -29,4 +30,8 @@ class FoodRepository @Inject constructor(
 
     suspend fun entriesForDate(date: LocalDate): List<FoodEntry> =
         foodEntryDao.forDate(date.toString()).map { it.toDomain() }
+
+    suspend fun addEntry(entry: FoodEntry) {
+        foodEntryDao.upsert(entry.toEntity())
+    }
 }

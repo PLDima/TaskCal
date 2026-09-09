@@ -1,6 +1,8 @@
 package inc.dimasic.taskcal.data.database
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
@@ -13,4 +15,7 @@ interface FoodEntryDao {
     /** [date] is an ISO-8601 `LocalDate` string, matching how [FoodEntryEntity.date] is stored. */
     @Query("SELECT * FROM food_entries WHERE date = :date")
     suspend fun forDate(date: String): List<FoodEntryEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entry: FoodEntryEntity)
 }
