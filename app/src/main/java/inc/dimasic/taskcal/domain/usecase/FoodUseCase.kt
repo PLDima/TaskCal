@@ -29,8 +29,15 @@ class FoodUseCase @Inject constructor(
             PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
         }
 
-    /** Logs one item against [date], which is the day being viewed rather than necessarily today. */
-    suspend fun addEntry(
+    /**
+     * Logs one item against [date], which is the day being viewed rather than necessarily today.
+     *
+     * A null [id] is a new entry and gets a fresh one; passing an existing id replaces that entry
+     * instead, which is how editing works — the two differ only in whether the caller already has
+     * an id to reuse.
+     */
+    suspend fun saveEntry(
+        id: String? = null,
         date: LocalDate,
         mealType: MealType,
         name: String,
@@ -39,17 +46,20 @@ class FoodUseCase @Inject constructor(
         carbs: Double,
         fat: Double,
     ) {
-        foodRepository.addEntry(
-            FoodEntry(
-                date = date,
-                mealType = mealType,
-                calories = calories,
-                protein = protein,
-                carbs = carbs,
-                fat = fat,
-                note = name,
-            ),
+        val entry = FoodEntry(
+            date = date,
+            mealType = mealType,
+            calories = calories,
+            protein = protein,
+            carbs = carbs,
+            fat = fat,
+            note = name,
         )
+        foodRepository.saveEntry(if (id == null) entry else entry.copy(id = id))
+    }
+
+    suspend fun deleteEntry(id: String) {
+        foodRepository.deleteEntry(id)
     }
 
     /** A day's entries grouped by meal, in eating order. Meals with nothing logged are left out. */

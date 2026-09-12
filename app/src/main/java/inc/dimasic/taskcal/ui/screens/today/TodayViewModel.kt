@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
 import inc.dimasic.taskcal.domain.usecase.TasksUseCase
 import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
+import inc.dimasic.taskcal.ui.screens.tasks.TaskListItemUi
+import inc.dimasic.taskcal.ui.screens.tasks.toUi
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow

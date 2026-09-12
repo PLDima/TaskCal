@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import inc.dimasic.taskcal.domain.model.Priority
-import inc.dimasic.taskcal.ui.screens.TaskListItemUi
+import inc.dimasic.taskcal.ui.screens.tasks.TaskListItemUi
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 import inc.dimasic.taskcal.ui.theme.StatusDoneGreen

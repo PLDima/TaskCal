@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.profile
 
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.ViewModel

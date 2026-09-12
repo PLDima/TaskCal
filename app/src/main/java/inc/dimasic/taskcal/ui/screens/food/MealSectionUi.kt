@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.food
 
 /** One meal's block on the Food screen, with its heading already worded. */
 data class MealSectionUi(

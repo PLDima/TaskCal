@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.ui.screens
+package inc.dimasic.taskcal.ui.screens.food
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,14 +32,16 @@ class FoodViewModel @Inject constructor(
     }
 
     /**
-     * Logs an item against the day currently being viewed, then reloads. [onSaved] fires once the
-     * write has landed, so the dialog dismisses only after the entry exists.
+     * Saves an item against the day currently being viewed, then reloads. A null [id] logs a new
+     * entry; the id of an existing one replaces it, which is what the edit dialog passes.
+     * [onSaved] fires once the write has landed, so the dialog dismisses only after it exists.
      *
      * Deliberately not routed through `launchRequest`: saving a row is not this screen's content
      * load, and putting it there would throw the whole screen behind the blocking loading dialog.
      * The `refresh()` that follows is what legitimately shows it.
      */
-    fun logMeal(
+    fun saveMeal(
+        id: String? = null,
         mealType: MealType,
         name: String,
         calories: Int,
@@ -49,7 +51,8 @@ class FoodViewModel @Inject constructor(
         onSaved: () -> Unit,
     ) {
         viewModelScope.launch {
-            foodUseCase.addEntry(
+            foodUseCase.saveEntry(
+                id = id,
                 date = _selectedDate.value,
                 mealType = mealType,
                 name = name,
@@ -59,6 +62,13 @@ class FoodViewModel @Inject constructor(
                 fat = fat,
             )
             onSaved()
+            refresh()
+        }
+    }
+
+    fun deleteMeal(id: String) {
+        viewModelScope.launch {
+            foodUseCase.deleteEntry(id)
             refresh()
         }
     }
@@ -94,9 +104,15 @@ private fun MealGroup.toUi() = MealSectionUi(
     title = mealType.sectionTitle,
     entries = entries.map { entry ->
         FoodEntryUi(
+            id = entry.id,
             name = entry.note,
             macrosLabel = "${entry.calories} kcal · ${entry.protein.roundToInt()}P " +
-                "${entry.carbs.roundToInt()}C ${entry.fat.roundToInt()}F",
+                    "${entry.carbs.roundToInt()}C ${entry.fat.roundToInt()}F",
+            mealType = entry.mealType,
+            calories = entry.calories,
+            protein = entry.protein,
+            carbs = entry.carbs,
+            fat = entry.fat,
         )
     },
 )
