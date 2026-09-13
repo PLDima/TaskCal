@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,9 +45,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import inc.dimasic.taskcal.common.utils.defaultRequestHandler
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
+import inc.dimasic.taskcal.domain.usecase.model.PeriodStatisticsSummary
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
 import inc.dimasic.taskcal.ui.screens.uiViews.ChartSeries
 import inc.dimasic.taskcal.ui.screens.uiViews.CommonChart
@@ -77,11 +82,8 @@ fun NutritionStatisticScreen(
     viewModel: NutritionStatisticViewModel = hiltViewModel(),
 ) {
     val selectedPeriod by viewModel.selectedPeriod.collectAsState()
-    val dateRangeLabel by viewModel.dateRangeLabel.collectAsState()
-    val averages by viewModel.periodCaloriesAverages.collectAsState()
-    val caloriesChart by viewModel.caloriesChart.collectAsState()
-    val summary by viewModel.caloriesSummary.collectAsState()
     val expandedMacro by viewModel.expandedMacro.collectAsState()
+    val isMacroChartLoading by viewModel.isMacroChartLoading.collectAsState()
     val macroChart by viewModel.macroChart.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -91,74 +93,110 @@ fun NutritionStatisticScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        PeriodNavigator(
-            dateRangeLabel = dateRangeLabel,
-            onPreviousPeriod = viewModel::showPreviousPeriod,
-            onNextPeriod = viewModel::showNextPeriod,
-            modifier = Modifier.fillMaxWidth(),
+        viewModel.getState().defaultRequestHandler(
+            onSuccess = { summary ->
+                PeriodContent(
+                    summary = summary,
+                    expandedMacro = expandedMacro,
+                    isMacroChartLoading = isMacroChartLoading,
+                    macroChart = macroChart,
+                    onPreviousPeriod = viewModel::showPreviousPeriod,
+                    onNextPeriod = viewModel::showNextPeriod,
+                    onMacroSelected = viewModel::toggleMacro,
+                    contentModifier = Modifier.weight(1f),
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun PeriodContent(
+    summary: PeriodStatisticsSummary,
+    expandedMacro: MacroType?,
+    isMacroChartLoading: Boolean,
+    macroChart: List<ChartPoint>,
+    onPreviousPeriod: () -> Unit,
+    onNextPeriod: () -> Unit,
+    onMacroSelected: (MacroType) -> Unit,
+    contentModifier: Modifier = Modifier,
+) {
+    PeriodNavigator(
+        dateRangeLabel = summary.dateRange.toLabel(),
+        onPreviousPeriod = onPreviousPeriod,
+        onNextPeriod = onNextPeriod,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Column(
+        modifier = contentModifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        AverageCaloriesRow(averages = summary.averages, modifier = Modifier.fillMaxWidth())
+
+        NutritionSummarySection(
+            summary = summary.summary.toUi(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
         )
 
-        Column(
+        Text(
+            text = "Calories",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+
+        CommonChart(
+            points = summary.caloriesChart,
+            series = listOf(
+                ChartSeries(label = "Consumed", color = MaterialTheme.colorScheme.primary),
+                ChartSeries(label = "Burned", color = StatusDoneGreen),
+            ),
+            maxValue = CHART_MAX_CALORIES,
+            yAxisMarks = CHART_Y_AXIS_MARKS,
+            yAxisValueLabel = { "${it / 1000}k" },
             modifier = Modifier
-                .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .padding(top = 8.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(ItemBackground)
+                .padding(16.dp),
+        )
+
+        Text(
+            text = "Macros",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 24.dp),
+        )
+
+        MacroButtonsRow(
+            expandedMacro = expandedMacro,
+            onMacroSelected = onMacroSelected,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+
+        AnimatedVisibility(
+            visible = expandedMacro != null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
         ) {
-            AverageCaloriesRow(averages = averages, modifier = Modifier.fillMaxWidth())
-
-            NutritionSummarySection(
-                summary = summary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-            )
-
-            Text(
-                text = "Calories",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-
-            CommonChart(
-                points = caloriesChart,
-                series = listOf(
-                    ChartSeries(label = "Consumed", color = MaterialTheme.colorScheme.primary),
-                    ChartSeries(label = "Burned", color = StatusDoneGreen),
-                ),
-                maxValue = CHART_MAX_CALORIES,
-                yAxisMarks = CHART_Y_AXIS_MARKS,
-                yAxisValueLabel = { "${it / 1000}k" },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(ItemBackground)
-                    .padding(16.dp),
-            )
-
-            Text(
-                text = "Macros",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 24.dp),
-            )
-
-            MacroButtonsRow(
-                expandedMacro = expandedMacro,
-                onMacroSelected = viewModel::toggleMacro,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-            )
-
-            AnimatedVisibility(
-                visible = expandedMacro != null,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                val macro = expandedMacro
-                if (macro != null) {
+            val macro = expandedMacro
+            if (macro != null) {
+                // Loads only once this macro is asked for, so its own placeholder stands in for
+                // the chart rather than the screen's main blocking loading dialog.
+                if (isMacroChartLoading) {
+                    MacroChartPlaceholder(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    )
+                } else {
                     CommonChart(
                         points = macroChart,
                         series = listOf(ChartSeries(label = macro.label, color = macro.color())),
@@ -175,6 +213,21 @@ fun NutritionStatisticScreen(
                 }
             }
         }
+    }
+}
+
+/** Same footprint as [CommonChart]'s card, so the macro section doesn't jump size while loading. */
+@Composable
+private fun MacroChartPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(ItemBackground),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator()
     }
 }
 

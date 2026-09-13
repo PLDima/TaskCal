@@ -100,6 +100,10 @@ private class FakeActivitiesRepository : ActivitiesRepository {
     override suspend fun activityTotals(range: DateRange): RecordedActivity =
         if (range.start.isAfter(LocalDate.now())) RecordedActivity.Empty else RECORDED
 
+    // Not exercised here — ActivitiesUseCase never reads the daily breakdown, only CaloriesUseCase
+    // does (see CaloriesUseCaseTest).
+    override suspend fun dailyCaloriesBurned(range: DateRange): Map<LocalDate, Int> = emptyMap()
+
     companion object {
         /** Deliberately all different, so a swapped field shows up as a failure. */
         val RECORDED = RecordedActivity(
