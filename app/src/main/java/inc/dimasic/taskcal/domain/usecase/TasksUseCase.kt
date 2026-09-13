@@ -23,7 +23,6 @@ import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 
 private val WEEKDAY_LABELS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 private const val MONTH_CHART_BUCKETS = 5
@@ -100,19 +99,20 @@ class TasksUseCase @Inject constructor(
             PeriodTaskOccurrences(dateRange = range, occurrences = stats)
         }
 
-    fun summaryForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<TasksSummary> =
-        occurrencesForPeriod(period, offset).map { it.toSummary() }
+    /**
+     * Pure derivations of an already-fetched [PeriodTaskOccurrences], for a screen that keeps one
+     * shared, stateful subscription to [occurrencesForPeriod] and maps this off it, rather than
+     * each stat re-running the underlying [combine] and Room queries on its own.
+     */
+    fun summaryOf(occurrences: PeriodTaskOccurrences): TasksSummary = occurrences.toSummary()
 
-    fun taskStatusForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<TaskStatusBreakdown> =
-        occurrencesForPeriod(period, offset).map { it.toTaskStatusBreakdown() }
+    fun taskStatusOf(occurrences: PeriodTaskOccurrences): TaskStatusBreakdown = occurrences.toTaskStatusBreakdown()
 
-    fun onTimeRateChartForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<List<ChartPoint>> =
-        combine(occurrencesForPeriod(period, offset), period) { periodOccurrences, selectedPeriod ->
-            when (selectedPeriod) {
-                TasksPeriod.WEEK -> weekChartBuckets(periodOccurrences)
-                TasksPeriod.MONTH -> monthChartBuckets(periodOccurrences)
-                TasksPeriod.ALL_TIME -> allTimeChartBuckets(periodOccurrences)
-            }
+    fun onTimeRateChartOf(occurrences: PeriodTaskOccurrences, period: TasksPeriod): List<ChartPoint> =
+        when (period) {
+            TasksPeriod.WEEK -> weekChartBuckets(occurrences)
+            TasksPeriod.MONTH -> monthChartBuckets(occurrences)
+            TasksPeriod.ALL_TIME -> allTimeChartBuckets(occurrences)
         }
 
     suspend fun setTaskCompleted(taskId: String, occurrenceDate: LocalDateTime?, completed: Boolean) {

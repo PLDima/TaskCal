@@ -1,98 +1,119 @@
 package inc.dimasic.taskcal.ui.screens.statistic.nutrition
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import inc.dimasic.taskcal.common.CommonViewModel
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
 import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
-import inc.dimasic.taskcal.domain.usecase.FoodUseCase
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
-import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary
-import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
+import inc.dimasic.taskcal.domain.usecase.model.PeriodStatisticsSummary
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
 private val summaryDayFormatter = DateTimeFormatter.ofPattern("MMM d")
+
 @HiltViewModel
 class NutritionStatisticViewModel @Inject constructor(
-    private val foodUseCase: FoodUseCase,
     private val caloriesUseCase: CaloriesUseCase,
-) : ViewModel() {
+) : CommonViewModel<PeriodStatisticsSummary>() {
 
     private val _selectedPeriod = MutableStateFlow(NutritionPeriod.WEEK)
     val selectedPeriod: StateFlow<NutritionPeriod> = _selectedPeriod.asStateFlow()
 
-    private val _periodOffset = MutableStateFlow(0)
+    private var periodOffset = 0
 
-    private val periodFoodEntries: StateFlow<PeriodFoodEntries> =
-        foodUseCase.entriesForPeriod(_selectedPeriod, _periodOffset)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodFoodEntries.Empty)
-
-    val dateRangeLabel: StateFlow<String> = periodFoodEntries
-        .map { it.dateRange.toLabel() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodFoodEntries.Empty.dateRange.toLabel())
-
-    val periodCaloriesAverages: StateFlow<PeriodCaloriesAverages> =
-        caloriesUseCase.averagesForPeriod(_selectedPeriod, _periodOffset)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeriodCaloriesAverages.Empty)
-
-    val caloriesChart: StateFlow<List<ChartPoint>> =
-        caloriesUseCase.caloriesChartForPeriod(_selectedPeriod, _periodOffset)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    val caloriesSummary: StateFlow<NutritionSummaryUi> =
-        caloriesUseCase.summaryForPeriod(_selectedPeriod, _periodOffset)
-            .map { it.toUi() }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NutritionSummaryUi.Empty)
-
+    /**
+     * The macro breakdown is a second, independent concern from the main content above: it's
+     * Room-only with no realistic failure worth the full Loading/Success/Failure machinery, so it
+     * gets its own small state instead of sharing `CommonViewModel`'s single request slot.
+     */
     private val _expandedMacro = MutableStateFlow<MacroType?>(null)
     val expandedMacro: StateFlow<MacroType?> = _expandedMacro.asStateFlow()
 
-    val macroChart: StateFlow<List<ChartPoint>> = _expandedMacro
-        .flatMapLatest { macro ->
-            if (macro == null) {
-                flowOf(emptyList())
-            } else {
-                caloriesUseCase.macroChartForPeriod(macro, _selectedPeriod, _periodOffset)
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    private val _isMacroChartLoading = MutableStateFlow(false)
+    val isMacroChartLoading: StateFlow<Boolean> = _isMacroChartLoading.asStateFlow()
+
+    private val _macroChart = MutableStateFlow<List<ChartPoint>>(emptyList())
+    val macroChart: StateFlow<List<ChartPoint>> = _macroChart.asStateFlow()
+
+    private var macroJob: Job? = null
+
+    init {
+        reload()
+    }
 
     fun selectPeriod(period: NutritionPeriod) {
         _selectedPeriod.value = period
-        _periodOffset.value = 0
+        periodOffset = 0
+        reload()
+        reloadExpandedMacro()
     }
 
     fun showPreviousPeriod() {
-        _periodOffset.value -= 1
+        periodOffset -= 1
+        reload()
+        reloadExpandedMacro()
     }
 
     fun showNextPeriod() {
-        _periodOffset.value += 1
+        periodOffset += 1
+        reload()
+        reloadExpandedMacro()
     }
 
+    /**
+     * Collapses if [macro] is already expanded; otherwise expands it and loads its chart — on
+     * demand, only now, never as part of the main load above.
+     */
     fun toggleMacro(macro: MacroType) {
-        _expandedMacro.value = if (_expandedMacro.value == macro) null else macro
+        if (_expandedMacro.value == macro) {
+            macroJob?.cancel()
+            _expandedMacro.value = null
+            _isMacroChartLoading.value = false
+            _macroChart.value = emptyList()
+            return
+        }
+        _expandedMacro.value = macro
+        loadMacroChart(macro)
+    }
+
+    private fun reload() {
+        val period = _selectedPeriod.value
+        val offset = periodOffset
+        launchRequest { caloriesUseCase.periodSummary(period, offset) }
+    }
+
+    /** Keeps an already-expanded macro's chart live to period/offset changes. */
+    private fun reloadExpandedMacro() {
+        _expandedMacro.value?.let { loadMacroChart(it) }
+    }
+
+    private fun loadMacroChart(macro: MacroType) {
+        macroJob?.cancel()
+        _isMacroChartLoading.value = true
+        val period = _selectedPeriod.value
+        val offset = periodOffset
+        macroJob = viewModelScope.launch {
+            _macroChart.value = caloriesUseCase.macroChartForPeriod(macro, period, offset)
+            _isMacroChartLoading.value = false
+        }
     }
 }
 
-private fun DateRange.toLabel(): String =
+fun DateRange.toLabel(): String =
     "${start.format(rangeLabelFormatter)} - ${end.format(rangeLabelFormatter)}"
 
-private fun PeriodCaloriesSummary.toUi(): NutritionSummaryUi = NutritionSummaryUi(
+fun PeriodCaloriesSummary.toUi(): NutritionSummaryUi = NutritionSummaryUi(
     totalConsumed = totalConsumed,
     totalBurned = totalBurned,
     avgBalance = avgBalance,

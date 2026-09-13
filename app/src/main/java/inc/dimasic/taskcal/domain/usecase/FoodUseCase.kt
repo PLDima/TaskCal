@@ -10,6 +10,7 @@ import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** The order meals are eaten in, and so the order they're listed in. */
@@ -28,6 +29,13 @@ class FoodUseCase @Inject constructor(
             val range = selectedPeriod.dateRangeAt(selectedOffset)
             PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
         }
+
+    /** One-shot sibling of [entriesForPeriod], for callers that load once per period/offset change. */
+    suspend fun entriesForPeriod(period: NutritionPeriod, offset: Int): PeriodFoodEntries {
+        val range = period.dateRangeAt(offset)
+        val entries = foodRepository.foodEntries.first()
+        return PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
+    }
 
     /**
      * Logs one item against [date], which is the day being viewed rather than necessarily today.

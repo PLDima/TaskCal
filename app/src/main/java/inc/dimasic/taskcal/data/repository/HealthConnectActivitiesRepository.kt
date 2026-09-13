@@ -32,4 +32,9 @@ class HealthConnectActivitiesRepository @Inject constructor(
      * also what a not-yet-granted permission reads as, and that changes the moment it's granted.
      */
     private fun DateRange.isCacheable(): Boolean = end.isBefore(LocalDate.now())
+
+    // Not cached yet: a broader cache across all Health Connect statistics reads is planned for a
+    // later version. This one reads through every time for now.
+    override suspend fun dailyCaloriesBurned(range: DateRange): Map<LocalDate, Int> =
+        healthConnectManager.dailyCaloriesBurned(range)
 }

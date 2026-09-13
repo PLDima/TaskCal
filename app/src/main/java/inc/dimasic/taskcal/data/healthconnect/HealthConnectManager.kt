@@ -12,11 +12,14 @@ import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import dagger.hilt.android.qualifiers.ApplicationContext
 import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.domain.model.DateRange
+import java.time.LocalDate
+import java.time.Period
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -106,6 +109,34 @@ class HealthConnectManager @Inject constructor(
             ).toRecordedActivity()
         } catch (e: SecurityException) {
             RecordedActivity.Empty
+        }
+    }
+
+    /**
+     * Calories burned, broken out by calendar day across [range], in one call. Unlike
+     * [activityTotals], a day-by-day breakdown is unavoidable here — best/worst-day comparisons and
+     * the calories chart's daily bars can't be answered from a single range total. A day with
+     * nothing recorded is simply absent from the map rather than present as zero.
+     */
+    suspend fun dailyCaloriesBurned(range: DateRange): Map<LocalDate, Int> {
+        if (availability != HealthConnectAvailability.INSTALLED) return emptyMap()
+
+        return try {
+            client.aggregateGroupByPeriod(
+                AggregateGroupByPeriodRequest(
+                    metrics = setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL),
+                    timeRangeFilter = TimeRangeFilter.between(
+                        range.start.atStartOfDay(),
+                        range.end.plusDays(1).atStartOfDay(),
+                    ),
+                    timeRangeSlicer = Period.ofDays(1),
+                ),
+            ).mapNotNull { bucket ->
+                val calories = bucket.result[TotalCaloriesBurnedRecord.ENERGY_TOTAL] ?: return@mapNotNull null
+                bucket.startTime.toLocalDate() to calories.inKilocalories.roundToInt()
+            }.toMap()
+        } catch (e: SecurityException) {
+            emptyMap()
         }
     }
 

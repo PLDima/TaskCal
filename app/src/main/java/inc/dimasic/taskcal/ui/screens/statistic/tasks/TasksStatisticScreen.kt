@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -50,6 +52,7 @@ fun TasksStatisticScreen(
     viewModel: TasksStatisticViewModel = hiltViewModel(),
 ) {
     val selectedPeriod by viewModel.selectedPeriod.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val dateRangeLabel by viewModel.dateRangeLabel.collectAsState()
     val summary by viewModel.summary.collectAsState()
     val onTimeRateChart by viewModel.onTimeRateChart.collectAsState()
@@ -70,41 +73,47 @@ fun TasksStatisticScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            OverviewSection(summary = summary, modifier = Modifier.fillMaxWidth())
-
-            TaskStatusSection(
-                taskStatus = taskStatus,
+        if (isLoading) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .padding(top = 24.dp),
-            )
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                OverviewSection(summary = summary, modifier = Modifier.fillMaxWidth())
 
-            Text(
-                text = "On Time",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 24.dp),
-            )
+                TaskStatusSection(
+                    taskStatus = taskStatus,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                )
 
-            CommonChart(
-                points = onTimeRateChart,
-                series = listOf(ChartSeries(label = "On time", color = MaterialTheme.colorScheme.primary)),
-                maxValue = ON_TIME_CHART_MAX_VALUE,
-                yAxisMarks = ON_TIME_CHART_Y_AXIS_MARKS,
-                yAxisValueLabel = { "$it%" },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(ItemBackground)
-                    .padding(16.dp),
-            )
+                Text(
+                    text = "On Time",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 24.dp),
+                )
+
+                CommonChart(
+                    points = onTimeRateChart,
+                    series = listOf(ChartSeries(label = "On time", color = MaterialTheme.colorScheme.primary)),
+                    maxValue = ON_TIME_CHART_MAX_VALUE,
+                    yAxisMarks = ON_TIME_CHART_Y_AXIS_MARKS,
+                    yAxisValueLabel = { "$it%" },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ItemBackground)
+                        .padding(16.dp),
+                )
+            }
         }
     }
 }
