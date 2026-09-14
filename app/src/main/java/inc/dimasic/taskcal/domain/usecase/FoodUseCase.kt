@@ -61,7 +61,7 @@ class FoodUseCase @Inject constructor(
             protein = protein,
             carbs = carbs,
             fat = fat,
-            note = name,
+            name = name,
         )
         foodRepository.saveEntry(if (id == null) entry else entry.copy(id = id))
     }

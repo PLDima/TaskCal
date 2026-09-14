@@ -14,6 +14,8 @@ data class TaskListItem(
     val taskId: String,
     /** Which occurrence this row stands for; null for a task with no date. */
     val occurrenceDate: LocalDateTime?,
+    /** Whether [occurrenceDate]'s time of day was chosen by the user and so is worth showing. */
+    val hasDueTime: Boolean,
     val title: String,
     val description: String,
     val priority: Priority,

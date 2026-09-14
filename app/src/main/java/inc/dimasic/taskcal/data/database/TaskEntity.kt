@@ -20,5 +20,6 @@ data class TaskEntity(
     val repeatDayOfWeek: Int?,
     val repeatDayOfMonth: Int?,
     val assignedDateTime: String?,
+    val hasDueTime: Boolean,
     val isCompleted: Boolean,
 )

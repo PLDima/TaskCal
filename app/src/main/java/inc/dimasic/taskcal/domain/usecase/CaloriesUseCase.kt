@@ -12,16 +12,12 @@ import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary
 import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
 import inc.dimasic.taskcal.domain.usecase.model.PeriodStatisticsSummary
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
-import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 
-private val WEEKDAY_LABELS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-private const val MONTH_CHART_BUCKETS = 5
 
 private data class NutritionChartBucket(
     val label: String,
@@ -180,11 +176,11 @@ class CaloriesUseCase @Inject constructor(
         dailyBurned: Map<LocalDate, Int>,
     ): List<NutritionChartBucket> {
         val entriesByDate = periodEntries.entries.groupBy { it.date }
-        return WEEKDAY_LABELS.mapIndexed { index, label ->
-            val date = periodEntries.dateRange.start.plusDays(index.toLong())
+        return periodEntries.dateRange.weekChartBuckets().map { bucket ->
+            val date = bucket.range.start
             val dayEntries = entriesByDate[date].orEmpty()
             NutritionChartBucket(
-                label = label,
+                label = bucket.label,
                 consumedCalories = dayEntries.sumOf { it.calories },
                 burnedCalories = dailyBurned[date] ?: 0,
                 protein = dayEntries.sumOf { it.protein },
@@ -198,25 +194,19 @@ class CaloriesUseCase @Inject constructor(
         periodEntries: PeriodFoodEntries,
         dailyBurned: Map<LocalDate, Int>,
     ): List<NutritionChartBucket> {
-        val totalDays = periodEntries.dateRange.dayCount
-        val bucketSize = ceil(totalDays / MONTH_CHART_BUCKETS.toDouble()).toInt().coerceAtLeast(1)
-        val consumedByDate = periodEntries.entries.groupBy { it.date }
-            .mapValues { (_, dayEntries) -> dayEntries.sumOf { it.calories } }
-            .filterValues { it > 0 }
+        val trackedDatesInPeriod = periodEntries.entries.groupBy { it.date }
+            .filterValues { dayEntries -> dayEntries.sumOf { it.calories } > 0 }
+            .keys
 
-        return (0 until MONTH_CHART_BUCKETS).map { bucketIndex ->
-            val bucketStart = periodEntries.dateRange.start.plusDays((bucketIndex * bucketSize).toLong())
-            val bucketEnd = minOf(bucketStart.plusDays((bucketSize - 1).toLong()), periodEntries.dateRange.end)
-            val bucketDayCount = ChronoUnit.DAYS.between(bucketStart, bucketEnd).toInt() + 1
+        return periodEntries.dateRange.monthChartBuckets().map { bucket ->
             // Only the days within this bucket something was logged for count toward its average
             // — the same rule the period-level averages follow, applied per bucket.
-            val trackedDates = (0 until bucketDayCount).map { bucketStart.plusDays(it.toLong()) }
-                .filter { consumedByDate.containsKey(it) }
+            val trackedDates = bucket.range.dates().filter { it in trackedDatesInPeriod }
             val trackedCount = trackedDates.size
             val bucketEntries = periodEntries.entries.filter { it.date in trackedDates }
 
             NutritionChartBucket(
-                label = "W${bucketIndex + 1}",
+                label = bucket.label,
                 consumedCalories = if (trackedCount > 0) bucketEntries.sumOf { it.calories } / trackedCount else 0,
                 burnedCalories = if (trackedCount > 0) trackedDates.sumOf { dailyBurned[it] ?: 0 } / trackedCount else 0,
                 protein = if (trackedCount > 0) bucketEntries.sumOf { it.protein } / trackedCount else 0.0,

@@ -1,12 +1,6 @@
 package inc.dimasic.taskcal.ui.screens.statistic.activities
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -40,11 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,15 +46,15 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import inc.dimasic.taskcal.common.utils.defaultRequestHandler
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.HealthConnectStatus
-import inc.dimasic.taskcal.domain.usecase.goalFraction
-import inc.dimasic.taskcal.domain.usecase.goalOvershoot
-import inc.dimasic.taskcal.domain.usecase.goalRemaining
-import inc.dimasic.taskcal.domain.usecase.model.ActivityTotals
-import inc.dimasic.taskcal.domain.usecase.model.PeriodActivityTotals
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
+import inc.dimasic.taskcal.ui.screens.uiViews.GoalProgressUi
+import inc.dimasic.taskcal.ui.screens.uiViews.GoalRing
+import inc.dimasic.taskcal.ui.screens.uiViews.WeightCard
+import inc.dimasic.taskcal.ui.screens.uiViews.healthConnectPlayStoreIntent
+import inc.dimasic.taskcal.ui.screens.uiViews.rememberHealthConnectPermissionLauncher
+import inc.dimasic.taskcal.ui.screens.uiViews.startActivitySafely
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
-import kotlin.math.roundToInt
 
 @Composable
 fun ActivitiesStatisticScreen(
@@ -92,9 +82,9 @@ fun ActivitiesStatisticScreen(
         )
 
         viewModel.getState().defaultRequestHandler(
-            onSuccess = { periodTotals ->
+            onSuccess = { period ->
                 PeriodContent(
-                    periodTotals = periodTotals,
+                    period = period,
                     healthConnectStatus = healthConnectStatus,
                     viewModel = viewModel,
                     onPreviousPeriod = viewModel::showPreviousPeriod,
@@ -108,7 +98,7 @@ fun ActivitiesStatisticScreen(
 
 @Composable
 private fun PeriodContent(
-    periodTotals: PeriodActivityTotals,
+    period: ActivitiesPeriodUi,
     healthConnectStatus: HealthConnectStatus,
     viewModel: ActivitiesStatisticViewModel,
     onPreviousPeriod: () -> Unit,
@@ -116,7 +106,7 @@ private fun PeriodContent(
     contentModifier: Modifier = Modifier,
 ) {
     PeriodNavigator(
-        dateRangeLabel = periodTotals.dateRange.toLabel(),
+        dateRangeLabel = period.dateRangeLabel,
         onPreviousPeriod = onPreviousPeriod,
         onNextPeriod = onNextPeriod,
         modifier = Modifier.fillMaxWidth(),
@@ -131,7 +121,6 @@ private fun PeriodContent(
             HealthConnectPrompt(
                 status = healthConnectStatus,
                 permissions = viewModel.healthConnectPermissions,
-                permissionContract = viewModel.healthConnectPermissionContract,
                 onPermissionResult = viewModel::refreshHealthConnect,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -140,17 +129,25 @@ private fun PeriodContent(
         }
 
         ActivityRingsRow(
-            totals = periodTotals.totals,
+            caloriesBurned = period.caloriesBurned,
+            steps = period.steps,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
         )
 
         CharacteristicsSection(
-            characteristics = periodTotals.totals.toCharacteristics(),
+            characteristics = period.characteristics,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp),
+        )
+
+        WeightCard(
+            weight = period.weight,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp, bottom = 16.dp),
         )
     }
 }
@@ -159,12 +156,11 @@ private fun PeriodContent(
 private fun HealthConnectPrompt(
     status: HealthConnectStatus,
     permissions: Set<String>,
-    permissionContract: ActivityResultContract<Set<String>, Set<String>>,
     onPermissionResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(permissionContract) { onPermissionResult() }
+    val permissionLauncher = rememberHealthConnectPermissionLauncher(onResult = onPermissionResult)
 
     Row(
         modifier = modifier
@@ -173,12 +169,13 @@ private fun HealthConnectPrompt(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(),
+                // Nothing to tap through to when the device can't run Health Connect at all.
+                enabled = status != HealthConnectStatus.UNAVAILABLE,
                 onClick = {
                     when (status) {
                         HealthConnectStatus.NOT_CONNECTED -> permissionLauncher.launch(permissions)
-                        HealthConnectStatus.UNAVAILABLE ->
-                            context.startActivitySafely(healthConnectPlayStoreIntent())
-                        HealthConnectStatus.CONNECTED -> Unit
+                        HealthConnectStatus.NEEDS_INSTALL -> context.startActivitySafely(healthConnectPlayStoreIntent())
+                        HealthConnectStatus.UNAVAILABLE, HealthConnectStatus.CONNECTED -> Unit
                     }
                 },
             )
@@ -195,7 +192,8 @@ private fun HealthConnectPrompt(
             Text(
                 text = when (status) {
                     HealthConnectStatus.NOT_CONNECTED -> "Grant permission to see your real activity data."
-                    HealthConnectStatus.UNAVAILABLE -> "Not available on this device. Tap to install."
+                    HealthConnectStatus.NEEDS_INSTALL -> "Tap to install or update Health Connect from the Play Store."
+                    HealthConnectStatus.UNAVAILABLE -> "Health Connect isn't supported on this device."
                     HealthConnectStatus.CONNECTED -> ""
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -210,17 +208,6 @@ private fun HealthConnectPrompt(
     }
 }
 
-private fun Context.startActivitySafely(intent: Intent) {
-    runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-}
-
-private fun healthConnectPlayStoreIntent(): Intent =
-    Intent(Intent.ACTION_VIEW).apply {
-        setPackage("com.android.vending")
-        data = Uri.parse(
-            "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding",
-        )
-    }
 
 @Composable
 private fun CharacteristicsSection(
@@ -314,7 +301,8 @@ private fun CharacteristicProgressBar(
 
 @Composable
 private fun ActivityRingsRow(
-    totals: ActivityTotals,
+    caloriesBurned: GoalProgressUi,
+    steps: GoalProgressUi,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -325,99 +313,14 @@ private fun ActivityRingsRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ActivityRing(
-            value = totals.caloriesBurned,
-            goal = totals.caloriesGoal,
-            caption = "Calories burned",
-        )
+        GoalRing(progress = caloriesBurned, caption = "Calories burned")
         VerticalDivider(
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp),
             color = ItemSplitter,
         )
-        ActivityRing(
-            value = totals.steps,
-            goal = totals.stepsGoal,
-            caption = "Steps",
-        )
-    }
-}
-
-@Composable
-private fun ActivityRing(
-    value: Int,
-    goal: Int,
-    caption: String,
-    modifier: Modifier = Modifier,
-) {
-    val fraction = goalFraction(value, goal)
-    val remaining = goalRemaining(value, goal)
-    val over = goalOvershoot(value, goal)
-    val percent = (fraction * 100).roundToInt()
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val progressColor = MaterialTheme.colorScheme.primary
-    val ringSize = 104.dp
-
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier.size(ringSize),
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(modifier = Modifier.size(ringSize)) {
-                val strokeWidth = 9.dp.toPx()
-                val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
-                val topLeft = Offset(strokeWidth / 2, strokeWidth / 2)
-
-                drawArc(
-                    color = trackColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                )
-                drawArc(
-                    color = progressColor,
-                    startAngle = -90f,
-                    sweepAngle = 360f * fraction,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                )
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$value",
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                )
-                Text(
-                    text = "/$goal",
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                )
-                Text(
-                    text = "$percent%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-
-        Text(
-            text = caption,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Text(
-            text = if (value > goal) "$over over" else "$remaining left",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (value > goal) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        GoalRing(progress = steps, caption = "Steps")
     }
 }
 

@@ -3,10 +3,10 @@ package inc.dimasic.taskcal.ui.screens.statistic.nutrition
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.common.CommonViewModel
-import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
 import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
+import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.toLabel
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary
 import inc.dimasic.taskcal.domain.usecase.model.PeriodStatisticsSummary
@@ -19,13 +19,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
 private val summaryDayFormatter = DateTimeFormatter.ofPattern("MMM d")
 
 @HiltViewModel
 class NutritionStatisticViewModel @Inject constructor(
     private val caloriesUseCase: CaloriesUseCase,
-) : CommonViewModel<PeriodStatisticsSummary>() {
+) : CommonViewModel<NutritionPeriodUi>() {
 
     private val _selectedPeriod = MutableStateFlow(NutritionPeriod.WEEK)
     val selectedPeriod: StateFlow<NutritionPeriod> = _selectedPeriod.asStateFlow()
@@ -90,7 +89,7 @@ class NutritionStatisticViewModel @Inject constructor(
     private fun reload() {
         val period = _selectedPeriod.value
         val offset = periodOffset
-        launchRequest { caloriesUseCase.periodSummary(period, offset) }
+        launchRequest { caloriesUseCase.periodSummary(period, offset).toUi() }
     }
 
     /** Keeps an already-expanded macro's chart live to period/offset changes. */
@@ -110,10 +109,14 @@ class NutritionStatisticViewModel @Inject constructor(
     }
 }
 
-fun DateRange.toLabel(): String =
-    "${start.format(rangeLabelFormatter)} - ${end.format(rangeLabelFormatter)}"
+private fun PeriodStatisticsSummary.toUi() = NutritionPeriodUi(
+    dateRangeLabel = dateRange.toLabel(),
+    averages = averages,
+    summary = summary.toUi(),
+    caloriesChart = caloriesChart,
+)
 
-fun PeriodCaloriesSummary.toUi(): NutritionSummaryUi = NutritionSummaryUi(
+private fun PeriodCaloriesSummary.toUi(): NutritionSummaryUi = NutritionSummaryUi(
     totalConsumed = totalConsumed,
     totalBurned = totalBurned,
     avgBalance = avgBalance,

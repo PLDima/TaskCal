@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 private val dateLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
+private val timeLabelFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
 /** Shared mapping from the task domain models onto what the Tasks and Today screens render. */
 
@@ -17,7 +18,7 @@ internal fun TaskListItem.toUi() = TaskListItemUi(
     occurrenceDate = occurrenceDate,
     title = title,
     description = description,
-    dateLabel = date.toRelativeLabel(),
+    dateLabel = date.toRelativeLabel() + (occurrenceDate?.toLocalTime()?.takeIf { hasDueTime }?.let { " · ${it.format(timeLabelFormatter)}" } ?: ""),
     isDone = state == TaskState.DONE,
     priority = priority,
     recurrenceType = recurrenceType,

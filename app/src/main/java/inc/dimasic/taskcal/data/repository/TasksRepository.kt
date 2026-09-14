@@ -4,8 +4,6 @@ import inc.dimasic.taskcal.data.database.TaskCompletionDao
 import inc.dimasic.taskcal.data.database.TaskDao
 import inc.dimasic.taskcal.data.database.toDomain
 import inc.dimasic.taskcal.data.database.toEntity
-import inc.dimasic.taskcal.domain.model.Priority
-import inc.dimasic.taskcal.domain.model.RecurrenceType
 import inc.dimasic.taskcal.domain.model.Task
 import inc.dimasic.taskcal.domain.model.TaskCompletion
 import java.time.LocalDateTime
@@ -30,22 +28,10 @@ class TasksRepository @Inject constructor(
     val completions: Flow<List<TaskCompletion>> =
         taskCompletionDao.observeAll().map { rows -> rows.map { it.toDomain() } }
 
-    suspend fun addTask(
-        title: String,
-        description: String,
-        priority: Priority,
-        recurrenceType: RecurrenceType,
-        assignedDateTime: LocalDateTime?,
-    ) {
-        val task = Task(
-            title = title,
-            description = description,
-            priority = priority,
-            recurrenceType = recurrenceType,
-            repeatDayOfWeek = assignedDateTime?.dayOfWeek.takeIf { recurrenceType == RecurrenceType.WEEKLY },
-            repeatDayOfMonth = assignedDateTime?.dayOfMonth.takeIf { recurrenceType == RecurrenceType.MONTHLY },
-            assignedDateTime = assignedDateTime,
-        )
+    suspend fun task(taskId: String): Task? = taskDao.findById(taskId)?.toDomain()
+
+    /** Writes the task, replacing whatever is stored under the same [Task.id]. */
+    suspend fun saveTask(task: Task) {
         taskDao.upsert(task.toEntity())
     }
 

@@ -3,14 +3,13 @@ package inc.dimasic.taskcal.ui.screens.statistic.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.TasksPeriod
 import inc.dimasic.taskcal.domain.usecase.TasksUseCase
+import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.toLabel
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodTaskOccurrences
 import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
 import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,8 +19,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-
-private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
 
 @HiltViewModel
 class TasksStatisticViewModel @Inject constructor(
@@ -83,6 +80,3 @@ class TasksStatisticViewModel @Inject constructor(
         _periodOffset.value += 1
     }
 }
-
-private fun DateRange.toLabel(): String =
-    "${start.format(rangeLabelFormatter)} - ${end.format(rangeLabelFormatter)}"

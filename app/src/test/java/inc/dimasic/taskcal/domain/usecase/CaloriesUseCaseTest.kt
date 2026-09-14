@@ -1,11 +1,11 @@
 package inc.dimasic.taskcal.domain.usecase
 
-import inc.dimasic.taskcal.data.database.FoodEntryDao
+import inc.dimasic.taskcal.data.database.FakeFoodEntryDao
 import inc.dimasic.taskcal.data.database.FoodEntryEntity
 import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.data.repository.FoodRepository
-import inc.dimasic.taskcal.data.repository.SettingsRepository
+import inc.dimasic.taskcal.data.repository.FakeSettingsRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.MealType
@@ -13,7 +13,6 @@ import inc.dimasic.taskcal.domain.model.NutritionPeriod
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -42,7 +41,7 @@ class CaloriesUseCaseTest {
         activitiesRepository: ActivitiesRepository = FakeCaloriesActivitiesRepository(),
     ): CaloriesUseCase {
         val foodUseCase = FoodUseCase(FoodRepository(FakeFoodEntryDao(entries)))
-        return CaloriesUseCase(foodUseCase, activitiesRepository, SettingsRepository())
+        return CaloriesUseCase(foodUseCase, activitiesRepository, FakeSettingsRepository())
     }
 
     @Test
@@ -122,7 +121,7 @@ class CaloriesUseCaseTest {
             entry(tuesday, calories = 100, protein = 10.0),
         )
         val foodUseCase = FoodUseCase(FoodRepository(FakeFoodEntryDao(entries)))
-        val useCase = CaloriesUseCase(foodUseCase, ThrowingActivitiesRepository(), SettingsRepository())
+        val useCase = CaloriesUseCase(foodUseCase, ThrowingActivitiesRepository(), FakeSettingsRepository())
 
         val chart = runBlocking { useCase.macroChartForPeriod(MacroType.PROTEIN, NutritionPeriod.WEEK, 0) }
 
@@ -176,7 +175,7 @@ class CaloriesUseCaseTest {
         protein = protein,
         carbs = carbs,
         fat = fat,
-        note = "",
+        name = "",
     )
 }
 
@@ -200,12 +199,4 @@ private class ThrowingActivitiesRepository : ActivitiesRepository {
 
     override suspend fun dailyCaloriesBurned(range: DateRange): Map<LocalDate, Int> =
         error("macroChartForPeriod must not read Health Connect")
-}
-
-/** In-memory [FoodEntryDao], so the real [FoodRepository]/[FoodUseCase] can run without Room. */
-private class FakeFoodEntryDao(private val entries: List<FoodEntryEntity>) : FoodEntryDao {
-    override fun observeAll() = flowOf(entries)
-    override suspend fun forDate(date: String) = entries.filter { it.date == date }
-    override suspend fun upsert(entry: FoodEntryEntity) = error("not needed for this test")
-    override suspend fun delete(id: String) = error("not needed for this test")
 }

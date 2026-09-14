@@ -55,6 +55,7 @@ import inc.dimasic.taskcal.ui.theme.StatusDoneGreen
 @Composable
 fun TasksScreen(
     onAddTask: () -> Unit,
+    onEditTask: (TaskListItemUi) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TasksViewModel = hiltViewModel(),
 ) {
@@ -103,6 +104,7 @@ fun TasksScreen(
                             TaskRow(
                                 task = task,
                                 onCheckedChange = { viewModel.toggleTaskCompletion(task) },
+                                onEditClick = { onEditTask(task) },
                                 onDeleteClick = { taskPendingDeletion = task },
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -214,6 +216,7 @@ private fun FilterTabs(
 private fun TaskRow(
     task: TaskListItemUi,
     onCheckedChange: () -> Unit,
+    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -254,8 +257,13 @@ private fun TaskRow(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
             ) {
-                // TODO: wire up edit task action
-                DropdownMenuItem(text = { Text("Edit") }, onClick = { menuExpanded = false })
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        menuExpanded = false
+                        onEditClick()
+                    },
+                )
                 DropdownMenuItem(
                     text = { Text("Delete") },
                     onClick = {

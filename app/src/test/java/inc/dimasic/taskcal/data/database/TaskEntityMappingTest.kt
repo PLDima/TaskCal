@@ -25,6 +25,7 @@ class TaskEntityMappingTest {
             priority = Priority.HIGH,
             recurrenceType = RecurrenceType.NONE,
             assignedDateTime = anchor,
+            hasDueTime = true,
             isCompleted = true,
         )
 

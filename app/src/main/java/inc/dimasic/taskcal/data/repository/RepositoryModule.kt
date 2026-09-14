@@ -12,4 +12,10 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun activitiesRepository(impl: HealthConnectActivitiesRepository): ActivitiesRepository
+
+    @Binds
+    abstract fun settingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
+
+    @Binds
+    abstract fun weightRepository(impl: HealthConnectWeightRepository): WeightRepository
 }

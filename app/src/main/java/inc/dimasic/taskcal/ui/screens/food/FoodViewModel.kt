@@ -7,6 +7,7 @@ import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
 import inc.dimasic.taskcal.domain.usecase.FoodUseCase
 import inc.dimasic.taskcal.domain.usecase.model.MealGroup
+import inc.dimasic.taskcal.ui.screens.uiViews.toMacrosUi
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -87,8 +88,11 @@ class FoodViewModel @Inject constructor(
             coroutineScope {
                 val calories = async { caloriesUseCase.caloriesForDate(date) }
                 val meals = async { foodUseCase.mealsForDate(date) }
+                val summary = calories.await()
                 FoodDayUi(
-                    calories = calories.await(),
+                    caloriesUsed = summary.caloriesUsed,
+                    caloriesGoal = summary.caloriesGoal,
+                    macros = summary.toMacrosUi(),
                     mealSections = meals.await().map { it.toUi() },
                 )
             }
@@ -105,7 +109,7 @@ private fun MealGroup.toUi() = MealSectionUi(
     entries = entries.map { entry ->
         FoodEntryUi(
             id = entry.id,
-            name = entry.note,
+            name = entry.name,
             macrosLabel = "${entry.calories} kcal · ${entry.protein.roundToInt()}P " +
                     "${entry.carbs.roundToInt()}C ${entry.fat.roundToInt()}F",
             mealType = entry.mealType,

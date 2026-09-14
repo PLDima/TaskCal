@@ -17,7 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,8 +26,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import inc.dimasic.taskcal.ui.AppTopBar
 import inc.dimasic.taskcal.ui.BottomBar
 import inc.dimasic.taskcal.ui.BottomTab
-import inc.dimasic.taskcal.ui.screens.tasks.AddTaskScreen
+import inc.dimasic.taskcal.ui.screens.tasks.TaskEditorScreen
 import inc.dimasic.taskcal.ui.screens.food.FoodScreen
+import inc.dimasic.taskcal.ui.screens.profile.ProfileDetailsScreen
 import inc.dimasic.taskcal.ui.screens.profile.ProfileScreen
 import inc.dimasic.taskcal.ui.screens.tasks.TasksScreen
 import inc.dimasic.taskcal.ui.screens.today.TodayScreen
@@ -49,19 +50,25 @@ class MainActivity : ComponentActivity() {
 
 private const val SCREEN_TRANSITION_MS = 300
 
-private enum class Overlay { NONE, PROFILE, ADD_TASK }
+private enum class Overlay { NONE, PROFILE, PROFILE_DETAILS, TASK_EDITOR }
 
 @Composable
 fun TaskCalApp() {
-    var selectedTab by remember { mutableStateOf(BottomTab.TODAY) }
-    var overlay by remember { mutableStateOf(Overlay.NONE) }
+    // Saveable, so rotation and process recreation land back on the same tab and overlay.
+    var selectedTab by rememberSaveable { mutableStateOf(BottomTab.TODAY) }
+    var overlay by rememberSaveable { mutableStateOf(Overlay.NONE) }
+    // Which task the editor overlay is editing; null means it's creating one.
+    var editingTaskId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    BackHandler(enabled = overlay != Overlay.NONE) { overlay = Overlay.NONE }
+    // Details sit on top of Profile, so backing out of them returns there rather than to the tabs.
+    val closeOverlay = { overlay = if (overlay == Overlay.PROFILE_DETAILS) Overlay.PROFILE else Overlay.NONE }
+    BackHandler(enabled = overlay != Overlay.NONE) { closeOverlay() }
 
     AnimatedContent(
         targetState = overlay,
         transitionSpec = {
-            val direction = if (targetState != Overlay.NONE) {
+            // Overlays are declared in stacking order, so a deeper one slides in, a shallower one out.
+            val direction = if (targetState.ordinal > initialState.ordinal) {
                 AnimatedContentTransitionScope.SlideDirection.Left
             } else {
                 AnimatedContentTransitionScope.SlideDirection.Right
@@ -81,20 +88,39 @@ fun TaskCalApp() {
                 },
             ) { innerPadding ->
                 ProfileScreen(
+                    onOpenDetails = { overlay = Overlay.PROFILE_DETAILS },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
                 )
             }
 
-            Overlay.ADD_TASK -> Scaffold(
+            Overlay.PROFILE_DETAILS -> Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    AppTopBar(title = "New task", onBackClick = { overlay = Overlay.NONE })
+                    AppTopBar(title = "Your details", onBackClick = closeOverlay)
                 },
             ) { innerPadding ->
-                AddTaskScreen(
-                    onTaskCreated = { overlay = Overlay.NONE },
+                ProfileDetailsScreen(
+                    onSaved = closeOverlay,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                )
+            }
+
+            Overlay.TASK_EDITOR -> Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    AppTopBar(
+                        title = if (editingTaskId == null) "New task" else "Edit task",
+                        onBackClick = { overlay = Overlay.NONE },
+                    )
+                },
+            ) { innerPadding ->
+                TaskEditorScreen(
+                    taskId = editingTaskId,
+                    onSaved = { overlay = Overlay.NONE },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -115,7 +141,15 @@ fun TaskCalApp() {
             ) { innerPadding ->
                 TabContent(
                     tab = selectedTab,
-                    onAddTask = { overlay = Overlay.ADD_TASK },
+                    onAddTask = {
+                        editingTaskId = null
+                        overlay = Overlay.TASK_EDITOR
+                    },
+                    onEditTask = { taskId ->
+                        editingTaskId = taskId
+                        overlay = Overlay.TASK_EDITOR
+                    },
+                    onShowTasks = { selectedTab = BottomTab.TASKS },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
@@ -126,10 +160,16 @@ fun TaskCalApp() {
 }
 
 @Composable
-fun TabContent(tab: BottomTab, onAddTask: () -> Unit, modifier: Modifier = Modifier) {
+fun TabContent(
+    tab: BottomTab,
+    onAddTask: () -> Unit,
+    onEditTask: (taskId: String) -> Unit,
+    onShowTasks: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     when (tab) {
-        BottomTab.TODAY -> TodayScreen(modifier = modifier)
-        BottomTab.TASKS -> TasksScreen(onAddTask = onAddTask, modifier = modifier)
+        BottomTab.TODAY -> TodayScreen(onAddTask = onAddTask, onShowTasks = onShowTasks, modifier = modifier)
+        BottomTab.TASKS -> TasksScreen(onAddTask = onAddTask, onEditTask = { onEditTask(it.taskId) }, modifier = modifier)
         BottomTab.FOOD -> FoodScreen(modifier = modifier)
         BottomTab.STATISTIC -> StatisticScreen(modifier = modifier)
     }

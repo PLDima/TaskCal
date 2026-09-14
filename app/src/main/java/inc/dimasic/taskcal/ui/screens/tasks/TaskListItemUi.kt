@@ -19,7 +19,7 @@ data class TaskListItemUi(
     val occurrenceDate: LocalDateTime?,
     val title: String,
     val description: String,
-    /** Pre-worded, e.g. "Today", "Tomorrow", "Sep 12" or "Not specified". */
+    /** Pre-worded, e.g. "Today", "Tomorrow · 14:30", "Sep 12" or "Not specified". */
     val dateLabel: String,
     val isDone: Boolean,
     val priority: Priority,

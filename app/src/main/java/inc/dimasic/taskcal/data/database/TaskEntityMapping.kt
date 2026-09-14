@@ -21,6 +21,7 @@ fun Task.toEntity() = TaskEntity(
     repeatDayOfWeek = repeatDayOfWeek?.value,
     repeatDayOfMonth = repeatDayOfMonth,
     assignedDateTime = assignedDateTime?.toString(),
+    hasDueTime = hasDueTime,
     isCompleted = isCompleted,
 )
 
@@ -33,6 +34,7 @@ fun TaskEntity.toDomain() = Task(
     repeatDayOfWeek = repeatDayOfWeek?.let(DayOfWeek::of),
     repeatDayOfMonth = repeatDayOfMonth,
     assignedDateTime = assignedDateTime?.let(LocalDateTime::parse),
+    hasDueTime = hasDueTime,
     isCompleted = isCompleted,
 )
 

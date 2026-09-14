@@ -19,4 +19,7 @@ interface ActivitiesRepository {
      * the map rather than present as zero.
      */
     suspend fun dailyCaloriesBurned(range: DateRange): Map<LocalDate, Int>
+
+    /** Forgets anything held back from earlier reads, so the next one goes to the source. */
+    fun invalidate() = Unit
 }
