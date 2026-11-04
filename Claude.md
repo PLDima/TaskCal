@@ -65,8 +65,9 @@ worth covering — see `TaskRecurrenceTest` for recurrence expansion and `Activi
 for aggregation. `firstValue()` in `FlowTestSupport.kt` takes the first value off a flow, so a
 use case can be driven with `flowOf(...)` inputs without a coroutine test dependency.
 
-The mock repositories build their data relative to `LocalDate.now()`, so assert on invariants and
-relationships rather than fixed numbers.
+The test fixtures build their data relative to `LocalDate.now()`, so assert on invariants and
+relationships rather than fixed numbers. In-memory DAO fakes live in `test/.../data/database`, so
+a use case can be driven through its real repository without Room.
 
 Java is not on `PATH`; build with the Android Studio JBR:
 

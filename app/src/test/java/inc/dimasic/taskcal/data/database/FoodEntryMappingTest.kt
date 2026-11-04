@@ -23,7 +23,7 @@ class FoodEntryMappingTest {
             protein = 45.5,
             carbs = 70.25,
             fat = 20.75,
-            note = "Chicken bowl",
+            name = "Chicken bowl",
         )
 
         assertEquals(entry, entry.toEntity().toDomain())
@@ -39,14 +39,14 @@ class FoodEntryMappingTest {
                 protein = 1.0,
                 carbs = 2.0,
                 fat = 3.0,
-                note = mealType.label,
+                name = mealType.label,
             )
             assertEquals(entry, entry.toEntity().toDomain())
         }
     }
 
     @Test
-    fun `an entry with no note round-trips`() {
+    fun `an entry with no name round-trips`() {
         val entry = FoodEntry(
             date = date,
             mealType = MealType.SNACK,
@@ -54,7 +54,7 @@ class FoodEntryMappingTest {
             protein = 0.0,
             carbs = 0.0,
             fat = 0.0,
-            note = "",
+            name = "",
         )
 
         assertEquals(entry, entry.toEntity().toDomain())
@@ -69,7 +69,7 @@ class FoodEntryMappingTest {
             protein = 28.0,
             carbs = 45.0,
             fat = 14.0,
-            note = "Oatmeal",
+            name = "Oatmeal",
         )
 
         assertEquals(entry.id, entry.toEntity().toDomain().id)
@@ -84,7 +84,7 @@ class FoodEntryMappingTest {
             protein = 35.0,
             carbs = 50.0,
             fat = 18.0,
-            note = "Salmon",
+            name = "Salmon",
         )
 
         assertEquals("2026-03-14", entry.toEntity().date)

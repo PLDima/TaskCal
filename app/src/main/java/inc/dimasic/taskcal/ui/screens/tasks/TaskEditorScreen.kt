@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -15,9 +16,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -30,10 +36,12 @@ import inc.dimasic.taskcal.domain.model.RecurrenceType
 import inc.dimasic.taskcal.ui.screens.uiViews.ChoiceGroup
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 private val scheduleDateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
+private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
 private enum class ScheduleOption(val label: String) {
     NONE("None"),
@@ -49,20 +57,61 @@ private fun ScheduleOption.toDate(pickedDate: LocalDate?): LocalDate? = when (th
     ScheduleOption.PICK_DATE -> pickedDate
 }
 
+/** The option that reproduces [date]: the named day when it is one, otherwise a picked date. */
+private fun LocalDate?.toScheduleOption(): ScheduleOption = when (this) {
+    null -> ScheduleOption.NONE
+    LocalDate.now() -> ScheduleOption.TODAY
+    LocalDate.now().plusDays(1) -> ScheduleOption.TOMORROW
+    else -> ScheduleOption.PICK_DATE
+}
+
+private enum class TimeOption(val label: String) {
+    NONE("None"),
+    PICK_TIME("Pick time"),
+}
+
+/**
+ * Creates a task, or edits [taskId] when given. The form is keyed on the editor session, so each
+ * visit starts from the task's current values rather than a previous visit's unsaved edits.
+ */
+@Composable
+fun TaskEditorScreen(
+    taskId: String?,
+    onSaved: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: TaskEditorViewModel = hiltViewModel(),
+) {
+    LaunchedEffect(taskId) { viewModel.open(taskId) }
+    val editor by viewModel.editor.collectAsState()
+
+    val state = editor ?: return
+    key(state.session) {
+        TaskForm(
+            initial = state.form,
+            onSave = { form -> viewModel.save(taskId, form, onSaved) },
+            modifier = modifier,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskScreen(
-    onTaskCreated: () -> Unit,
+private fun TaskForm(
+    initial: TaskFormUi,
+    onSave: (TaskFormUi) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: AddTaskViewModel = hiltViewModel(),
 ) {
-    var title by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
-    var priority by rememberSaveable { mutableStateOf(Priority.MEDIUM) }
-    var recurrence by rememberSaveable { mutableStateOf(RecurrenceType.NONE) }
-    var schedule by rememberSaveable { mutableStateOf(ScheduleOption.NONE) }
-    var pickedDate by rememberSaveable { mutableStateOf<LocalDate?>(null) }
+    var title by rememberSaveable { mutableStateOf(initial.title) }
+    var description by rememberSaveable { mutableStateOf(initial.description) }
+    var priority by rememberSaveable { mutableStateOf(initial.priority) }
+    var recurrence by rememberSaveable { mutableStateOf(initial.recurrenceType) }
+    var schedule by rememberSaveable { mutableStateOf(initial.date.toScheduleOption()) }
+    var pickedDate by rememberSaveable { mutableStateOf(initial.date.takeIf { schedule == ScheduleOption.PICK_DATE }) }
+    var pickedTime by rememberSaveable { mutableStateOf(initial.time) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+
+    val date = schedule.toDate(pickedDate)
 
     Column(
         modifier = modifier
@@ -120,17 +169,40 @@ fun AddTaskScreen(
                     if (option == ScheduleOption.PICK_DATE) showDatePicker = true
                 },
             )
+            // A time of day only means something once there's a date for it to fall on.
+            if (date != null) {
+                ChoiceGroup(
+                    label = "Time",
+                    options = TimeOption.entries,
+                    selected = if (pickedTime == null) TimeOption.NONE else TimeOption.PICK_TIME,
+                    optionLabel = { option ->
+                        if (option == TimeOption.PICK_TIME && pickedTime != null) {
+                            pickedTime!!.format(timeFormatter)
+                        } else {
+                            option.label
+                        }
+                    },
+                    onSelected = { option ->
+                        when (option) {
+                            TimeOption.NONE -> pickedTime = null
+                            TimeOption.PICK_TIME -> showTimePicker = true
+                        }
+                    },
+                )
+            }
         }
 
         Button(
             onClick = {
-                viewModel.addTask(
-                    title = title.trim(),
-                    description = description.trim(),
-                    priority = priority,
-                    recurrenceType = recurrence,
-                    assignedDate = schedule.toDate(pickedDate),
-                    onSaved = onTaskCreated,
+                onSave(
+                    TaskFormUi(
+                        title = title,
+                        description = description,
+                        priority = priority,
+                        recurrenceType = recurrence,
+                        date = date,
+                        time = pickedTime.takeIf { date != null },
+                    ),
                 )
             },
             enabled = title.isNotBlank(),
@@ -170,6 +242,33 @@ fun AddTaskScreen(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showTimePicker) {
+        val initialTime = pickedTime ?: LocalTime.of(9, 0)
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialTime.hour,
+            initialMinute = initialTime.minute,
+            is24Hour = true,
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Due time") },
+            text = { TimePicker(state = timePickerState) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pickedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                        showTimePicker = false
+                    },
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 

@@ -17,7 +17,7 @@ fun FoodEntry.toEntity() = FoodEntryEntity(
     protein = protein,
     carbs = carbs,
     fat = fat,
-    note = note,
+    name = name,
 )
 
 fun FoodEntryEntity.toDomain() = FoodEntry(
@@ -28,5 +28,5 @@ fun FoodEntryEntity.toDomain() = FoodEntry(
     protein = protein,
     carbs = carbs,
     fat = fat,
-    note = note,
+    name = name,
 )

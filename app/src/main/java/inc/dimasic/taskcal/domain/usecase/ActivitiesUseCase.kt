@@ -8,10 +8,6 @@ import inc.dimasic.taskcal.domain.usecase.model.PeriodActivityTotals
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
-// The calorie and step goals come from the user's profile; the distance goal has no home there
-// yet, so it stays a domain default until the Profile screen can set it.
-private const val DAILY_DISTANCE_GOAL_METERS = 5_000
-
 /**
  * Sums recorded activity over a period and measures it against the user's goals. A goal covers
  * one day, so it scales with the number of days the period spans.
@@ -36,11 +32,11 @@ class ActivitiesUseCase @Inject constructor(
             dateRange = range,
             totals = ActivityTotals(
                 caloriesBurned = recorded.caloriesBurned,
-                caloriesGoal = profile.nutritionGoal.calories * range.dayCount,
+                caloriesGoal = profile.caloriesBurnedGoal * range.dayCount,
                 steps = recorded.steps,
                 stepsGoal = profile.stepsGoal * range.dayCount,
                 distanceMeters = recorded.distanceMeters,
-                distanceGoalMeters = DAILY_DISTANCE_GOAL_METERS * range.dayCount,
+                distanceGoalMeters = profile.distanceGoalMeters * range.dayCount,
                 activeMinutes = recorded.activeMinutes,
                 avgHeartRate = recorded.avgHeartRate,
             ),

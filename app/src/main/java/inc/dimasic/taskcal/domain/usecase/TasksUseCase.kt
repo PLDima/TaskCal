@@ -13,6 +13,7 @@ import inc.dimasic.taskcal.domain.usecase.model.TaskListItem
 import inc.dimasic.taskcal.domain.usecase.model.TaskOccurrenceStat
 import inc.dimasic.taskcal.domain.usecase.model.TaskPriorityGroup
 import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
+import inc.dimasic.taskcal.domain.usecase.model.ChartBucket
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
 import java.time.LocalDate
@@ -20,19 +21,20 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
-private val WEEKDAY_LABELS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-private const val MONTH_CHART_BUCKETS = 5
 private const val ALL_TIME_CHART_MONTHS = 6
 private val monthLabelFormatter = DateTimeFormatter.ofPattern("MMM")
 
 /** Most urgent first, which is the order tasks are grouped and listed in. */
 private val PRIORITY_ORDER = listOf(Priority.HIGH, Priority.MEDIUM, Priority.LOW)
 
-/** Nothing collects a time of day yet, so a task is due at this hour of its date. */
+/**
+ * The time of day a task is stamped with when the user didn't choose one. It is a placeholder,
+ * not a deadline — such a task is due by the end of its date — and [Task.hasDueTime] is what
+ * tells [isPast] which way to read it.
+ */
 private val DEFAULT_TASK_TIME: LocalTime = LocalTime.of(9, 0)
 
 class TasksUseCase @Inject constructor(
@@ -127,9 +129,13 @@ class TasksUseCase @Inject constructor(
         tasksRepository.deleteTask(taskId)
     }
 
+    suspend fun task(taskId: String): Task? = tasksRepository.task(taskId)
+
     /**
      * A repeating task expands from its start date, so it always needs one: asking for a repeat
-     * with no date starts the series today rather than creating a task that never comes due.
+     * with no date starts the series today rather than creating a task that never comes due. A
+     * weekly or monthly task also remembers which weekday or day-of-month it lands on, taken from
+     * that start date. A [dueTime] only means something alongside a date.
      */
     suspend fun addTask(
         title: String,
@@ -137,17 +143,48 @@ class TasksUseCase @Inject constructor(
         priority: Priority,
         recurrenceType: RecurrenceType,
         assignedDate: LocalDate?,
+        dueTime: LocalTime? = null,
     ) {
-        val startDate = assignedDate
-            ?: LocalDate.now().takeIf { recurrenceType != RecurrenceType.NONE }
-        tasksRepository.addTask(
-            title = title,
-            description = description,
-            priority = priority,
-            recurrenceType = recurrenceType,
-            assignedDateTime = startDate?.atTime(DEFAULT_TASK_TIME),
+        tasksRepository.saveTask(
+            Task(title = title, description = description, priority = priority, recurrenceType = recurrenceType)
+                .scheduled(recurrenceType, assignedDate, dueTime),
         )
     }
+
+    /**
+     * Rewrites every editable field of an existing task, under the same rules as [addTask]. Its
+     * identity and, for a one-off, its done state are kept; a repeating task's completion receipts
+     * stay attached to whichever occurrence dates still expand.
+     */
+    suspend fun updateTask(
+        taskId: String,
+        title: String,
+        description: String,
+        priority: Priority,
+        recurrenceType: RecurrenceType,
+        assignedDate: LocalDate?,
+        dueTime: LocalTime?,
+    ) {
+        val existing = tasksRepository.task(taskId) ?: return
+        tasksRepository.saveTask(
+            existing.copy(title = title, description = description, priority = priority, recurrenceType = recurrenceType)
+                .scheduled(recurrenceType, assignedDate, dueTime),
+        )
+    }
+}
+
+/** Applies the scheduling rules described on [TasksUseCase.addTask] to a task's other fields. */
+private fun Task.scheduled(recurrenceType: RecurrenceType, assignedDate: LocalDate?, dueTime: LocalTime?): Task {
+    val startDate = assignedDate
+        ?: LocalDate.now().takeIf { recurrenceType != RecurrenceType.NONE }
+    val assignedDateTime = startDate?.atTime(dueTime ?: DEFAULT_TASK_TIME)
+    return copy(
+        recurrenceType = recurrenceType,
+        repeatDayOfWeek = assignedDateTime?.dayOfWeek.takeIf { recurrenceType == RecurrenceType.WEEKLY },
+        repeatDayOfMonth = assignedDateTime?.dayOfMonth.takeIf { recurrenceType == RecurrenceType.MONTHLY },
+        assignedDateTime = assignedDateTime,
+        hasDueTime = startDate != null && dueTime != null,
+    )
 }
 
 /**
@@ -180,10 +217,11 @@ private fun Task.toListItem(
 ) = TaskListItem(
     taskId = id,
     occurrenceDate = occurrence,
+    hasDueTime = hasDueTime,
     title = title,
     description = description,
     priority = priority,
-    state = stateOf(isDoneAt(occurrence, completions), occurrence, now),
+    state = stateOf(isDoneAt(occurrence, completions), occurrence, hasDueTime, now),
     recurrenceType = recurrenceType,
 )
 
@@ -193,7 +231,8 @@ private fun Task.toStat(
     now: LocalDateTime,
 ) = TaskOccurrenceStat(
     occurrenceDate = occurrence,
-    state = stateOf(isDoneAt(occurrence, completions), occurrence, now),
+    hasDueTime = hasDueTime,
+    state = stateOf(isDoneAt(occurrence, completions), occurrence, hasDueTime, now),
     completedAt = completedAtFor(occurrence, completions),
 )
 
@@ -212,11 +251,19 @@ private fun Task.completedAtFor(occurrence: LocalDateTime?, completions: List<Ta
         occurrence.takeIf { isCompleted }
     }
 
-private fun stateOf(isDone: Boolean, occurrence: LocalDateTime?, now: LocalDateTime): TaskState = when {
-    isDone -> TaskState.DONE
-    occurrence != null && occurrence.isBefore(now) -> TaskState.MISSED
-    else -> TaskState.PENDING
-}
+private fun stateOf(isDone: Boolean, occurrence: LocalDateTime?, hasDueTime: Boolean, now: LocalDateTime): TaskState =
+    when {
+        isDone -> TaskState.DONE
+        occurrence != null && isPast(occurrence, hasDueTime, now) -> TaskState.MISSED
+        else -> TaskState.PENDING
+    }
+
+/**
+ * Whether [deadline] had already passed at [moment]. A deadline with a chosen time is read to the
+ * minute; one without is the whole day — see [DEFAULT_TASK_TIME].
+ */
+private fun isPast(deadline: LocalDateTime, hasDueTime: Boolean, moment: LocalDateTime): Boolean =
+    if (hasDueTime) deadline.isBefore(moment) else deadline.toLocalDate().isBefore(moment.toLocalDate())
 
 private fun PeriodTaskOccurrences.toSummary(): TasksSummary = TasksSummary(
     available = occurrences.size,
@@ -226,38 +273,30 @@ private fun PeriodTaskOccurrences.toSummary(): TasksSummary = TasksSummary(
 
 private fun weekChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<ChartPoint> {
     val range = periodOccurrences.dateRange ?: return emptyList()
-    val occurrencesByDate = periodOccurrences.occurrences.groupBy { it.date }
-    return WEEKDAY_LABELS.mapIndexed { index, label ->
-        val date = range.start.plusDays(index.toLong())
-        ChartPoint(label = label, values = listOf(occurrencesByDate[date].orEmpty().onTimeRatePercent()))
-    }
+    return range.weekChartBuckets().map { bucket -> periodOccurrences.chartPointIn(bucket) }
 }
 
 private fun monthChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<ChartPoint> {
     val range = periodOccurrences.dateRange ?: return emptyList()
-    val totalDays = range.dayCount
-    val bucketSize = ceil(totalDays / MONTH_CHART_BUCKETS.toDouble()).toInt().coerceAtLeast(1)
-    return (0 until MONTH_CHART_BUCKETS).map { bucketIndex ->
-        val bucketStart = range.start.plusDays((bucketIndex * bucketSize).toLong())
-        val bucketEnd = minOf(bucketStart.plusDays((bucketSize - 1).toLong()), range.end)
-        val bucketOccurrences = periodOccurrences.occurrences.filter { stat ->
-            val date = stat.date ?: return@filter false
-            !date.isBefore(bucketStart) && !date.isAfter(bucketEnd)
-        }
-        ChartPoint(label = "W${bucketIndex + 1}", values = listOf(bucketOccurrences.onTimeRatePercent()))
-    }
+    return range.monthChartBuckets().map { bucket -> periodOccurrences.chartPointIn(bucket) }
 }
 
+/** The on-time rate of the occurrences falling inside [bucket]; undated ones fall in none. */
+private fun PeriodTaskOccurrences.chartPointIn(bucket: ChartBucket): ChartPoint {
+    val bucketOccurrences = occurrences.filter { stat -> stat.date?.let { it in bucket.range } ?: false }
+    return ChartPoint(label = bucket.label, values = listOf(bucketOccurrences.onTimeRatePercent()))
+}
+
+/** One column per month across [allTimeRange], oldest first. */
 private fun allTimeChartBuckets(periodOccurrences: PeriodTaskOccurrences): List<ChartPoint> {
-    val firstMonth = LocalDate.now().withDayOfMonth(1).minusMonths((ALL_TIME_CHART_MONTHS - 1).toLong())
+    val firstMonth = allTimeRange().start
     return (0 until ALL_TIME_CHART_MONTHS).map { index ->
         val monthStart = firstMonth.plusMonths(index.toLong())
-        val monthEnd = monthStart.plusMonths(1).minusDays(1)
-        val monthOccurrences = periodOccurrences.occurrences.filter { stat ->
-            val date = stat.date ?: return@filter false
-            !date.isBefore(monthStart) && !date.isAfter(monthEnd)
-        }
-        ChartPoint(label = monthStart.format(monthLabelFormatter), values = listOf(monthOccurrences.onTimeRatePercent()))
+        val bucket = ChartBucket(
+            label = monthStart.format(monthLabelFormatter),
+            range = DateRange(monthStart, monthStart.plusMonths(1).minusDays(1)),
+        )
+        periodOccurrences.chartPointIn(bucket)
     }
 }
 
@@ -272,7 +311,7 @@ private fun List<TaskOccurrenceStat>.onTimeRatePercent(): Int {
 private fun TaskOccurrenceStat.isOnTime(): Boolean {
     val dueDateTime = occurrenceDate ?: return true
     val completedAt = completedAt ?: return false
-    return !completedAt.isAfter(dueDateTime)
+    return !isPast(dueDateTime, hasDueTime, completedAt)
 }
 
 private fun PeriodTaskOccurrences.toTaskStatusBreakdown(): TaskStatusBreakdown {
@@ -293,5 +332,5 @@ private fun TaskOccurrenceStat.isMissed(now: LocalDateTime): Boolean =
 /** A task with no [TaskOccurrenceStat.occurrenceDate] has no deadline, so it's never overdue. */
 private fun TaskOccurrenceStat.isOverdue(now: LocalDateTime): Boolean {
     val dueDateTime = occurrenceDate ?: return false
-    return dueDateTime.isBefore(now)
+    return isPast(dueDateTime, hasDueTime, now)
 }

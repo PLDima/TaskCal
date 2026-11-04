@@ -28,6 +28,11 @@ data class Task(
      * before it.
      */
     val assignedDateTime: LocalDateTime? = null,
+    /**
+     * Whether the time of day in [assignedDateTime] was chosen by the user. When it wasn't, the
+     * stored time is a placeholder and the task is simply due by the end of its date.
+     */
+    val hasDueTime: Boolean = false,
     /** Only meaningful for non-repeating tasks; repeating ones use [TaskCompletion]. */
     val isCompleted: Boolean = false,
 ) {

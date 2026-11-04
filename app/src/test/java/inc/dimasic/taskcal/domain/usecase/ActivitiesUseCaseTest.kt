@@ -2,9 +2,10 @@ package inc.dimasic.taskcal.domain.usecase
 
 import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
-import inc.dimasic.taskcal.data.repository.SettingsRepository
+import inc.dimasic.taskcal.data.repository.FakeSettingsRepository
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.DateRange
+import inc.dimasic.taskcal.domain.model.UserProfile
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
@@ -22,7 +23,7 @@ import org.junit.Test
  */
 class ActivitiesUseCaseTest {
 
-    private val useCase = ActivitiesUseCase(FakeActivitiesRepository(), SettingsRepository())
+    private val useCase = ActivitiesUseCase(FakeActivitiesRepository(), FakeSettingsRepository())
 
     private fun totals(period: ActivitiesPeriod, offset: Int) =
         runBlocking { useCase.totalsForPeriod(period, offset) }
@@ -59,14 +60,27 @@ class ActivitiesUseCaseTest {
         val day = totals(ActivitiesPeriod.DAY, offset = 0).totals
         val week = totals(ActivitiesPeriod.WEEK, offset = 0).totals
 
-        // 5km is a domain default; the calorie and step goals come from the user's profile.
-        assertEquals(3_000, day.caloriesGoal)
-        assertEquals(10_000, day.stepsGoal)
-        assertEquals(5_000, day.distanceGoalMeters)
+        // Every goal comes from the user's profile — the fake serves the defaults.
+        val profile = UserProfile.Default
+        // Burned calories are measured against the burned goal, not the intake goal.
+        assertEquals(profile.caloriesBurnedGoal, day.caloriesGoal)
+        assertEquals(profile.stepsGoal, day.stepsGoal)
+        assertEquals(profile.distanceGoalMeters, day.distanceGoalMeters)
 
-        assertEquals(3_000 * 7, week.caloriesGoal)
-        assertEquals(10_000 * 7, week.stepsGoal)
-        assertEquals(5_000 * 7, week.distanceGoalMeters)
+        assertEquals(profile.caloriesBurnedGoal * 7, week.caloriesGoal)
+        assertEquals(profile.stepsGoal * 7, week.stepsGoal)
+        assertEquals(profile.distanceGoalMeters * 7, week.distanceGoalMeters)
+    }
+
+    @Test
+    fun `an edited goal is what the next period is measured against`() {
+        val settings = FakeSettingsRepository()
+        val useCase = ActivitiesUseCase(FakeActivitiesRepository(), settings)
+        runBlocking { settings.updateStepsGoal(8_000) }
+
+        val day = runBlocking { useCase.totalsForPeriod(ActivitiesPeriod.DAY, 0) }.totals
+
+        assertEquals(8_000, day.stepsGoal)
     }
 
     @Test

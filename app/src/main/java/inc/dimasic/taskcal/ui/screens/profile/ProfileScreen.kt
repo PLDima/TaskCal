@@ -1,10 +1,5 @@
 package inc.dimasic.taskcal.ui.screens.profile
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -51,13 +46,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.HealthConnectClient
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import inc.dimasic.taskcal.domain.model.HealthConnectStatus
-import inc.dimasic.taskcal.domain.usecase.model.ProfileGoals
+import inc.dimasic.taskcal.domain.model.UnitSystem
+import inc.dimasic.taskcal.ui.screens.uiViews.ChoiceGroup
+import inc.dimasic.taskcal.ui.screens.uiViews.appNotificationSettingsIntent
+import inc.dimasic.taskcal.ui.screens.uiViews.healthConnectPlayStoreIntent
+import inc.dimasic.taskcal.ui.screens.uiViews.healthConnectSettingsIntent
+import inc.dimasic.taskcal.ui.screens.uiViews.rememberHealthConnectPermissionLauncher
+import inc.dimasic.taskcal.ui.screens.uiViews.startActivitySafely
 import inc.dimasic.taskcal.ui.theme.ItemBackground
 import inc.dimasic.taskcal.ui.theme.ItemSplitter
 
@@ -68,11 +68,34 @@ private enum class GoalDialog {
     WEIGHT,
 }
 
+/** The dialogs the Preferences and Other rows open. */
+private enum class SettingsDialog {
+    UNITS,
+    PRIVACY,
+}
+
+/** No data leaves the device, so the policy is short enough to live in the app itself. */
+private const val PRIVACY_STATEMENT =
+    "TaskCal keeps everything on your device: your tasks, meals, goals and profile are stored " +
+        "locally and never uploaded.\n\n" +
+        "Activity and weight figures are read from Health Connect only with the permissions you " +
+        "grant, are used solely to show your statistics, and can be revoked at any time from " +
+        "Health Connect settings.\n\n" +
+        "Uninstalling the app removes all of its data."
+
 @Composable
-fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(
+    onOpenDetails: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ProfileViewModel = hiltViewModel(),
+) {
+    val card by viewModel.card.collectAsState()
     val goals by viewModel.goals.collectAsState()
+    val unitSystem by viewModel.unitSystem.collectAsState()
     val healthConnectStatus by viewModel.healthConnectStatus.collectAsState()
     var openDialog by remember { mutableStateOf<GoalDialog?>(null) }
+    var openSettingsDialog by remember { mutableStateOf<SettingsDialog?>(null) }
+    val context = LocalContext.current
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -89,9 +112,9 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
             .padding(16.dp),
     ) {
         UserCard(
-            name = "User",
-            tagline = "take control of your health and stay consistent.",
-            onClick = { /* TODO: open profile details */ },
+            name = card.name,
+            tagline = card.subtitle,
+            onClick = onOpenDetails,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -109,7 +132,6 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
         HealthConnectSection(
             status = healthConnectStatus,
             permissions = viewModel.healthConnectPermissions,
-            permissionContract = viewModel.healthConnectPermissionContract,
             onPermissionResult = viewModel::refreshHealthConnect,
             modifier = Modifier
                 .fillMaxWidth()
@@ -117,12 +139,16 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
         )
 
         PreferencesSection(
+            unitsLabel = unitSystem.description,
+            onUnitsClick = { openSettingsDialog = SettingsDialog.UNITS },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
         )
 
         OtherSection(
+            onNotificationsClick = { context.startActivitySafely(appNotificationSettingsIntent(context)) },
+            onPrivacyClick = { openSettingsDialog = SettingsDialog.PRIVACY },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
@@ -131,6 +157,7 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
 
     when (openDialog) {
         GoalDialog.CALORIES -> CaloriesGoalDialog(
+            title = "Daily calories goal",
             initialValue = goals.caloriesGoal,
             onConfirm = {
                 viewModel.updateCaloriesGoal(it)
@@ -157,12 +184,33 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
             onDismiss = { openDialog = null },
         )
         GoalDialog.WEIGHT -> WeightGoalDialog(
-            initialValue = goals.weightGoalKg,
+            initialValue = goals.weightGoalInput,
+            unit = goals.weightUnit,
             onConfirm = {
                 viewModel.updateWeightGoal(it)
                 openDialog = null
             },
             onDismiss = { openDialog = null },
+        )
+        null -> Unit
+    }
+
+    when (openSettingsDialog) {
+        SettingsDialog.UNITS -> UnitsDialog(
+            selected = unitSystem,
+            onSelected = {
+                viewModel.updateUnitSystem(it)
+                openSettingsDialog = null
+            },
+            onDismiss = { openSettingsDialog = null },
+        )
+        SettingsDialog.PRIVACY -> AlertDialog(
+            onDismissRequest = { openSettingsDialog = null },
+            title = { Text("Privacy") },
+            text = { Text(PRIVACY_STATEMENT) },
+            confirmButton = {
+                TextButton(onClick = { openSettingsDialog = null }) { Text("OK") }
+            },
         )
         null -> Unit
     }
@@ -228,7 +276,7 @@ private fun UserCard(
 
 @Composable
 private fun GoalsSection(
-    goals: ProfileGoals,
+    goals: ProfileGoalsUi,
     onCaloriesGoalClick: () -> Unit,
     onStepsGoalClick: () -> Unit,
     onMacroGoalsClick: () -> Unit,
@@ -274,7 +322,7 @@ private fun GoalsSection(
             PropertyRow(
                 icon = Icons.Filled.MonitorWeight,
                 name = "Weight goal",
-                value = "%.1f kg".format(goals.weightGoalKg),
+                value = goals.weightGoalLabel,
                 onClick = onWeightGoalClick,
             )
         }
@@ -285,12 +333,11 @@ private fun GoalsSection(
 private fun HealthConnectSection(
     status: HealthConnectStatus,
     permissions: Set<String>,
-    permissionContract: ActivityResultContract<Set<String>, Set<String>>,
     onPermissionResult: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(permissionContract) { onPermissionResult() }
+    val permissionLauncher = rememberHealthConnectPermissionLauncher(onResult = onPermissionResult)
 
     Column(modifier = modifier) {
         Text(
@@ -313,15 +360,15 @@ private fun HealthConnectSection(
                 value = when (status) {
                     HealthConnectStatus.CONNECTED -> "Connected"
                     HealthConnectStatus.NOT_CONNECTED -> "Not connected"
-                    HealthConnectStatus.UNAVAILABLE -> "Not available on this device"
+                    HealthConnectStatus.NEEDS_INSTALL -> "Install or update from the Play Store"
+                    HealthConnectStatus.UNAVAILABLE -> "Not supported on this device"
                 },
                 onClick = {
                     when (status) {
                         HealthConnectStatus.NOT_CONNECTED -> permissionLauncher.launch(permissions)
-                        HealthConnectStatus.CONNECTED ->
-                            context.startActivitySafely(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
-                        HealthConnectStatus.UNAVAILABLE ->
-                            context.startActivitySafely(healthConnectPlayStoreIntent())
+                        HealthConnectStatus.CONNECTED -> context.startActivitySafely(healthConnectSettingsIntent())
+                        HealthConnectStatus.NEEDS_INSTALL -> context.startActivitySafely(healthConnectPlayStoreIntent())
+                        HealthConnectStatus.UNAVAILABLE -> Unit
                     }
                 },
             )
@@ -329,20 +376,13 @@ private fun HealthConnectSection(
     }
 }
 
-private fun Context.startActivitySafely(intent: Intent) {
-    runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-}
-
-private fun healthConnectPlayStoreIntent(): Intent =
-    Intent(Intent.ACTION_VIEW).apply {
-        setPackage("com.android.vending")
-        data = Uri.parse(
-            "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding",
-        )
-    }
 
 @Composable
-private fun PreferencesSection(modifier: Modifier = Modifier) {
+private fun PreferencesSection(
+    unitsLabel: String,
+    onUnitsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier) {
         Text(
             text = "Preferences",
@@ -361,15 +401,19 @@ private fun PreferencesSection(modifier: Modifier = Modifier) {
             PropertyRow(
                 icon = Icons.Filled.Straighten,
                 name = "Units",
-                value = "Metric (kg, cm)",
-                onClick = { /* TODO: change units */ },
+                value = unitsLabel,
+                onClick = onUnitsClick,
             )
         }
     }
 }
 
 @Composable
-private fun OtherSection(modifier: Modifier = Modifier) {
+private fun OtherSection(
+    onNotificationsClick: () -> Unit,
+    onPrivacyClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier) {
         Text(
             text = "Other",
@@ -388,15 +432,15 @@ private fun OtherSection(modifier: Modifier = Modifier) {
             PropertyRow(
                 icon = Icons.Filled.Notifications,
                 name = "Notifications",
-                value = "Manage reminders",
-                onClick = { /* TODO: open notification settings */ },
+                value = "System notification settings",
+                onClick = onNotificationsClick,
             )
             HorizontalDivider(color = ItemSplitter)
             PropertyRow(
                 icon = Icons.Filled.PrivacyTip,
                 name = "Privacy",
-                value = "Privacy policy and data usage",
-                onClick = { /* TODO: open privacy policy */ },
+                value = "How your data is used",
+                onClick = onPrivacyClick,
             )
         }
     }
@@ -455,6 +499,7 @@ private fun PropertyRow(
 
 @Composable
 private fun CaloriesGoalDialog(
+    title: String,
     initialValue: Int,
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit,
@@ -464,7 +509,7 @@ private fun CaloriesGoalDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Daily calories goal") },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 value = text,
@@ -594,12 +639,38 @@ private fun MacroGoalsDialog(
 }
 
 @Composable
+private fun UnitsDialog(
+    selected: UnitSystem,
+    onSelected: (UnitSystem) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Units") },
+        text = {
+            ChoiceGroup(
+                label = "Show measurements in",
+                options = UnitSystem.entries,
+                selected = selected,
+                optionLabel = { it.label },
+                onSelected = onSelected,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
+}
+
+/** [initialValue] and the confirmed value are in [unit]; the ViewModel converts to kilograms. */
+@Composable
 private fun WeightGoalDialog(
     initialValue: Double,
+    unit: String,
     onConfirm: (Double) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var text by remember { mutableStateOf(initialValue.toString()) }
+    var text by remember { mutableStateOf("%.1f".format(initialValue)) }
     val parsedValue = text.toDoubleOrNull()
 
     AlertDialog(
@@ -609,7 +680,7 @@ private fun WeightGoalDialog(
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Weight (kg)") },
+                label = { Text("Weight ($unit)") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )

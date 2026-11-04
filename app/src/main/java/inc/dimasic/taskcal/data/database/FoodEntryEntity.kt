@@ -18,5 +18,5 @@ data class FoodEntryEntity(
     val protein: Double,
     val carbs: Double,
     val fat: Double,
-    val note: String,
+    val name: String,
 )

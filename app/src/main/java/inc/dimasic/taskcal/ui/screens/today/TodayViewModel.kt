@@ -4,8 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.ProfileUseCase
 import inc.dimasic.taskcal.domain.usecase.TasksUseCase
+import inc.dimasic.taskcal.domain.usecase.WeightUseCase
 import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
+import inc.dimasic.taskcal.ui.screens.uiViews.CaloriesSectionUi
+import inc.dimasic.taskcal.ui.screens.uiViews.WeightSummaryUi
+import inc.dimasic.taskcal.ui.screens.uiViews.toSectionUi
+import inc.dimasic.taskcal.ui.screens.uiViews.toUi
 import inc.dimasic.taskcal.ui.screens.tasks.TaskListItemUi
 import inc.dimasic.taskcal.ui.screens.tasks.toUi
 import java.time.LocalDate
@@ -22,6 +28,8 @@ import kotlinx.coroutines.launch
 class TodayViewModel @Inject constructor(
     private val tasksUseCase: TasksUseCase,
     private val caloriesUseCase: CaloriesUseCase,
+    private val weightUseCase: WeightUseCase,
+    profileUseCase: ProfileUseCase,
 ) : ViewModel() {
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -32,9 +40,15 @@ class TodayViewModel @Inject constructor(
             .map { tasks -> tasks.map { it.toUi() } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val caloriesForSelectedDate: StateFlow<CaloriesSummary> =
-        _selectedDate.map { caloriesUseCase.caloriesForDate(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CaloriesSummary.Empty)
+    val caloriesForSelectedDate: StateFlow<CaloriesSectionUi> =
+        _selectedDate.map { caloriesUseCase.caloriesForDate(it).toSectionUi() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CaloriesSummary.Empty.toSectionUi())
+
+    /** The weight doesn't follow the selected day; it's whatever was last weighed in. */
+    val weight: StateFlow<WeightSummaryUi?> =
+        profileUseCase.unitSystem
+            .map { units -> weightUseCase.summary().toUi(units) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date

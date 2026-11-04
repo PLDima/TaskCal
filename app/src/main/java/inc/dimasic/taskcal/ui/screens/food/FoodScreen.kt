@@ -237,17 +237,12 @@ private fun FoodDayContent(
         item {
             Column(modifier = Modifier.fillMaxWidth()) {
                 CaloriesTotalsRow(
-                    used = foodDay.calories.caloriesUsed,
-                    goal = foodDay.calories.caloriesGoal,
+                    used = foodDay.caloriesUsed,
+                    goal = foodDay.caloriesGoal,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 MacroBreakdownRow(
-                    proteinUsed = foodDay.calories.proteinUsed,
-                    proteinGoal = foodDay.calories.proteinGoal,
-                    fatUsed = foodDay.calories.fatUsed,
-                    fatGoal = foodDay.calories.fatGoal,
-                    carbsUsed = foodDay.calories.carbsUsed,
-                    carbsGoal = foodDay.calories.carbsGoal,
+                    macros = foodDay.macros,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 14.dp),

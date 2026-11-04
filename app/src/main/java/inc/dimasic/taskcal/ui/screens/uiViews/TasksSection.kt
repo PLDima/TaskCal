@@ -42,6 +42,7 @@ private const val VISIBLE_TASK_COUNT = 4
 fun TasksSection(
     tasks: List<TaskListItemUi>,
     onSeeAllClick: () -> Unit,
+    onAddClick: () -> Unit,
     onTaskCheckedChange: (TaskListItemUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -54,9 +55,7 @@ fun TasksSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = "Tasks", style = MaterialTheme.typography.titleMedium)
-            IconButton(onClick = {
-                // TODO: add task logic
-            }) {
+            IconButton(onClick = onAddClick) {
                 Icon(Icons.Filled.Add, contentDescription = "Add task")
             }
         }

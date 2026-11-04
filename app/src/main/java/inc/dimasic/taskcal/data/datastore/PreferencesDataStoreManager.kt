@@ -2,6 +2,7 @@ package inc.dimasic.taskcal.data.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
@@ -25,14 +26,22 @@ class PreferencesDataStoreManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
 
+    /** Every stored preference, re-emitted whenever any of them changes. */
+    val preferences: Flow<Preferences> = context.preferencesDataStore.data
+
     fun <T> observe(key: Preferences.Key<T>, defaultValue: T): Flow<T> =
-        context.preferencesDataStore.data.map { it[key] ?: defaultValue }
+        preferences.map { it[key] ?: defaultValue }
 
     suspend fun <T> set(key: Preferences.Key<T>, value: T) {
-        context.preferencesDataStore.edit { it[key] = value }
+        edit { it[key] = value }
     }
 
     suspend fun <T> remove(key: Preferences.Key<T>) {
-        context.preferencesDataStore.edit { it.remove(key) }
+        edit { it.remove(key) }
+    }
+
+    /** Applies several changes as one write, so observers see them land together. */
+    suspend fun edit(transform: (MutablePreferences) -> Unit) {
+        context.preferencesDataStore.edit(transform)
     }
 }

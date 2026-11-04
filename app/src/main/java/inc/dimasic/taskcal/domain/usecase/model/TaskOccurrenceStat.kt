@@ -8,6 +8,8 @@ import java.time.LocalDateTime
 data class TaskOccurrenceStat(
     /** Null for a task with no date, which therefore has no deadline. */
     val occurrenceDate: LocalDateTime?,
+    /** Whether [occurrenceDate]'s time of day is a real deadline or a placeholder — see [inc.dimasic.taskcal.domain.model.Task.hasDueTime]. */
+    val hasDueTime: Boolean,
     val state: TaskState,
     val completedAt: LocalDateTime?,
 ) {

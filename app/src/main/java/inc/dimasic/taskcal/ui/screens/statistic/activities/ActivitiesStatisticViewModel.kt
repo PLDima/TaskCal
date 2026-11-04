@@ -1,19 +1,27 @@
 package inc.dimasic.taskcal.ui.screens.statistic.activities
 
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.common.CommonViewModel
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
-import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import inc.dimasic.taskcal.domain.usecase.ActivitiesUseCase
+import inc.dimasic.taskcal.domain.model.UnitSystem
 import inc.dimasic.taskcal.domain.usecase.HealthConnectUseCase
+import inc.dimasic.taskcal.domain.usecase.ProfileUseCase
+import inc.dimasic.taskcal.domain.usecase.WeightUseCase
+import inc.dimasic.taskcal.domain.usecase.model.WeightSummary
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import inc.dimasic.taskcal.domain.usecase.goalFraction
 import inc.dimasic.taskcal.domain.usecase.goalPercent
 import inc.dimasic.taskcal.domain.usecase.model.ActivityTotals
 import inc.dimasic.taskcal.domain.usecase.model.PeriodActivityTotals
-import java.time.format.DateTimeFormatter
+import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.toLabel
+import inc.dimasic.taskcal.ui.screens.uiViews.distanceLabel
+import inc.dimasic.taskcal.ui.screens.uiViews.goalProgressUi
+import kotlinx.coroutines.flow.first
+import inc.dimasic.taskcal.ui.screens.uiViews.toUi
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,14 +30,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private val rangeLabelFormatter = DateTimeFormatter.ofPattern("MMM d")
-private val singleDayFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
-
 @HiltViewModel
 class ActivitiesStatisticViewModel @Inject constructor(
     private val activitiesUseCase: ActivitiesUseCase,
+    private val weightUseCase: WeightUseCase,
+    private val profileUseCase: ProfileUseCase,
     private val healthConnectUseCase: HealthConnectUseCase,
-) : CommonViewModel<PeriodActivityTotals>() {
+) : CommonViewModel<ActivitiesPeriodUi>() {
 
     private val _selectedPeriod = MutableStateFlow(ActivitiesPeriod.DAY)
     val selectedPeriod: StateFlow<ActivitiesPeriod> = _selectedPeriod.asStateFlow()
@@ -41,9 +48,6 @@ class ActivitiesStatisticViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HealthConnectStatus.NOT_CONNECTED)
 
     val healthConnectPermissions: Set<String> = healthConnectUseCase.permissions
-
-    val healthConnectPermissionContract: ActivityResultContract<Set<String>, Set<String>> =
-        healthConnectUseCase.permissionRequestContract()
 
     init {
         refreshHealthConnect()
@@ -74,21 +78,30 @@ class ActivitiesStatisticViewModel @Inject constructor(
     private fun reload() {
         val period = _selectedPeriod.value
         val offset = periodOffset
-        launchRequest { activitiesUseCase.totalsForPeriod(period, offset) }
+        // Both reads go to Health Connect, so they run side by side rather than one after the other.
+        launchRequest {
+            coroutineScope {
+                val totals = async { activitiesUseCase.totalsForPeriod(period, offset) }
+                val periodTotals = totals.await()
+                val weight = async { weightUseCase.summary(changeOver = periodTotals.dateRange) }
+                periodTotals.toUi(weight.await(), profileUseCase.unitSystem.first())
+            }
+        }
     }
 }
 
-fun DateRange.toLabel(): String =
-    if (start == end) {
-        start.format(singleDayFormatter)
-    } else {
-        "${start.format(rangeLabelFormatter)} - ${end.format(rangeLabelFormatter)}"
-    }
+private fun PeriodActivityTotals.toUi(weight: WeightSummary, units: UnitSystem) = ActivitiesPeriodUi(
+    dateRangeLabel = dateRange.toLabel(),
+    caloriesBurned = goalProgressUi(totals.caloriesBurned, totals.caloriesGoal, remainingLabel = "left", overLabel = "over"),
+    steps = goalProgressUi(totals.steps, totals.stepsGoal, remainingLabel = "left", overLabel = "over"),
+    characteristics = totals.toCharacteristics(units),
+    weight = weight.toUi(units, changeWording = if (dateRange.dayCount == 1) "today" else "this period"),
+)
 
-fun ActivityTotals.toCharacteristics(): List<ActivityCharacteristic> = listOfNotNull(
+private fun ActivityTotals.toCharacteristics(units: UnitSystem): List<ActivityCharacteristic> = listOfNotNull(
     goalCharacteristic("Steps", steps, stepsGoal) { "%,d".format(it) },
     goalCharacteristic("Calories burned", caloriesBurned, caloriesGoal) { "%,d kcal".format(it) },
-    goalCharacteristic("Distance", distanceMeters, distanceGoalMeters) { "%.1f km".format(it / 1000.0) },
+    goalCharacteristic("Distance", distanceMeters, distanceGoalMeters) { units.distanceLabel(it) },
     ActivityCharacteristic(
         title = "Active minutes",
         valueLabel = "$activeMinutes min",

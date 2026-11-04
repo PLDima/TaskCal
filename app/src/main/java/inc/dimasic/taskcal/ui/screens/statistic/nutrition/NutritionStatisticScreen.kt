@@ -50,7 +50,6 @@ import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
-import inc.dimasic.taskcal.domain.usecase.model.PeriodStatisticsSummary
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.PeriodNavigator
 import inc.dimasic.taskcal.ui.screens.uiViews.ChartSeries
 import inc.dimasic.taskcal.ui.screens.uiViews.CommonChart
@@ -112,7 +111,7 @@ fun NutritionStatisticScreen(
 
 @Composable
 private fun PeriodContent(
-    summary: PeriodStatisticsSummary,
+    summary: NutritionPeriodUi,
     expandedMacro: MacroType?,
     isMacroChartLoading: Boolean,
     macroChart: List<ChartPoint>,
@@ -122,7 +121,7 @@ private fun PeriodContent(
     contentModifier: Modifier = Modifier,
 ) {
     PeriodNavigator(
-        dateRangeLabel = summary.dateRange.toLabel(),
+        dateRangeLabel = summary.dateRangeLabel,
         onPreviousPeriod = onPreviousPeriod,
         onNextPeriod = onNextPeriod,
         modifier = Modifier.fillMaxWidth(),
@@ -136,7 +135,7 @@ private fun PeriodContent(
         AverageCaloriesRow(averages = summary.averages, modifier = Modifier.fillMaxWidth())
 
         NutritionSummarySection(
-            summary = summary.summary.toUi(),
+            summary = summary.summary,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp),
