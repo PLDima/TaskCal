@@ -5,8 +5,8 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [TaskEntity::class, TaskCompletionEntity::class, FoodEntryEntity::class],
-    version = 4,
-    exportSchema = true,
+    version = 1,
+    exportSchema = false,
 )
 abstract class TaskCalDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao

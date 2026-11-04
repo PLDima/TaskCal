@@ -37,12 +37,6 @@ android {
     }
 }
 
-// Every database version's schema is written out under app/schemas and committed, so a migration
-// can be checked against the exact shape it migrates from.
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

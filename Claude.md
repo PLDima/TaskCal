@@ -69,9 +69,6 @@ The test fixtures build their data relative to `LocalDate.now()`, so assert on i
 relationships rather than fixed numbers. In-memory DAO fakes live in `test/.../data/database`, so
 a use case can be driven through its real repository without Room.
 
-Room exports every database version's schema to `app/schemas/`; commit the new JSON with any
-version bump, and write the migration against the previous version's file.
-
 Java is not on `PATH`; build with the Android Studio JBR:
 
 ```bash
