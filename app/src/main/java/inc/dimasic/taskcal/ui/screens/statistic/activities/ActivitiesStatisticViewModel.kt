@@ -5,11 +5,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.common.CommonViewModel
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.HealthConnectStatus
-import inc.dimasic.taskcal.domain.usecase.ActivitiesUseCase
+import inc.dimasic.taskcal.domain.usecase.activities.ActivitiesUseCase
 import inc.dimasic.taskcal.domain.model.UnitSystem
-import inc.dimasic.taskcal.domain.usecase.HealthConnectUseCase
-import inc.dimasic.taskcal.domain.usecase.ProfileUseCase
-import inc.dimasic.taskcal.domain.usecase.WeightUseCase
+import inc.dimasic.taskcal.domain.usecase.healthconnect.HealthConnectUseCase
+import inc.dimasic.taskcal.domain.usecase.profile.ProfileUseCase
+import inc.dimasic.taskcal.domain.usecase.weight.WeightUseCase
 import inc.dimasic.taskcal.domain.usecase.model.WeightSummary
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

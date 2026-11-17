@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.domain.model.TaskState
-import inc.dimasic.taskcal.domain.usecase.TasksUseCase
-import inc.dimasic.taskcal.domain.usecase.groupedByPriority
+import inc.dimasic.taskcal.domain.usecase.tasks.TasksUseCase
+import inc.dimasic.taskcal.domain.usecase.tasks.groupedByPriority
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

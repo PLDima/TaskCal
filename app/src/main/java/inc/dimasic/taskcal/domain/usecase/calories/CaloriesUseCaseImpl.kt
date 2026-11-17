@@ -1,16 +1,20 @@
-package inc.dimasic.taskcal.domain.usecase
+package inc.dimasic.taskcal.domain.usecase.calories
 
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.dateRangeAt
+import inc.dimasic.taskcal.domain.usecase.food.FoodUseCase
 import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesAverages
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary
 import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
 import inc.dimasic.taskcal.domain.usecase.model.PeriodStatisticsSummary
+import inc.dimasic.taskcal.domain.usecase.monthChartBuckets
+import inc.dimasic.taskcal.domain.usecase.weekChartBuckets
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -34,11 +38,11 @@ private fun MacroType.valueFrom(bucket: NutritionChartBucket): Double = when (th
     MacroType.CARBS -> bucket.carbs
 }
 
-class CaloriesUseCase @Inject constructor(
+class CaloriesUseCaseImpl @Inject constructor(
     private val foodUseCase: FoodUseCase,
     private val activitiesRepository: ActivitiesRepository,
     settingsRepository: SettingsRepository,
-) {
+) : CaloriesUseCase {
 
     private val userProfile = settingsRepository.userProfile
 
@@ -46,7 +50,7 @@ class CaloriesUseCase @Inject constructor(
      * One-shot, so a screen can load this together with everything else it shows. The Health
      * Connect read runs alongside the local ones rather than behind them — it is the slow one.
      */
-    suspend fun caloriesForDate(date: LocalDate): CaloriesSummary = coroutineScope {
+    override suspend fun caloriesForDate(date: LocalDate): CaloriesSummary = coroutineScope {
         val burned = async { activitiesRepository.activityTotals(DateRange(date, date)).caloriesBurned }
         val entries = async { foodUseCase.entriesForDate(date) }
         val goal = userProfile.first().nutritionGoal
@@ -73,7 +77,7 @@ class CaloriesUseCase @Inject constructor(
      * [ActivitiesRepository.dailyCaloriesBurned] gives the day-by-day breakdown that best/worst-day
      * and the chart bars need — those can't be answered from a single range total.
      */
-    suspend fun periodSummary(period: NutritionPeriod, offset: Int): PeriodStatisticsSummary = coroutineScope {
+    override suspend fun periodSummary(period: NutritionPeriod, offset: Int): PeriodStatisticsSummary = coroutineScope {
         val range = period.dateRangeAt(offset)
         val periodEntriesDeferred = async { foodUseCase.entriesForPeriod(period, offset) }
         val totalBurnedDeferred = async { activitiesRepository.activityTotals(range).caloriesBurned }
@@ -99,7 +103,7 @@ class CaloriesUseCase @Inject constructor(
      * On demand, only once a macro's chart is actually asked for. Room-only — no Health Connect
      * read, since protein/fat/carbs are entirely consumed-side figures.
      */
-    suspend fun macroChartForPeriod(macro: MacroType, period: NutritionPeriod, offset: Int): List<ChartPoint> {
+    override suspend fun macroChartForPeriod(macro: MacroType, period: NutritionPeriod, offset: Int): List<ChartPoint> {
         val periodEntries = foodUseCase.entriesForPeriod(period, offset)
         return period.buckets(periodEntries, dailyBurned = emptyMap()).map {
             ChartPoint(label = it.label, values = listOf(macro.valueFrom(it).roundToInt()))

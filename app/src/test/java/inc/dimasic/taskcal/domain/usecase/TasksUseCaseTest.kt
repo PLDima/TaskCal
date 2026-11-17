@@ -11,6 +11,8 @@ import inc.dimasic.taskcal.domain.model.Task
 import inc.dimasic.taskcal.domain.model.TaskCompletion
 import inc.dimasic.taskcal.domain.model.TasksPeriod
 import inc.dimasic.taskcal.domain.usecase.model.PeriodTaskOccurrences
+import inc.dimasic.taskcal.domain.usecase.tasks.TasksUseCase
+import inc.dimasic.taskcal.domain.usecase.tasks.TasksUseCaseImpl
 import inc.dimasic.taskcal.firstValue
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -42,7 +44,7 @@ class TasksUseCaseTest {
     private val todayAtNine = today.atTime(9, 0)
 
     private fun useCase(tasks: List<Task>, completions: List<TaskCompletion> = emptyList()) =
-        TasksUseCase(
+        TasksUseCaseImpl(
             TasksRepository(
                 FakeTaskDao(tasks.map { it.toEntity() }),
                 FakeTaskCompletionDao(completions.map { it.toEntity() }),
@@ -221,7 +223,7 @@ class TasksUseCaseTest {
     @Test
     fun `a weekly or monthly task remembers which day it lands on, from its start date`() {
         val dao = FakeTaskDao()
-        val useCase = TasksUseCase(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
+        val useCase = TasksUseCaseImpl(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
 
         runBlocking {
             useCase.addTask("weekly", "", Priority.LOW, RecurrenceType.WEEKLY, monday)
@@ -241,7 +243,7 @@ class TasksUseCaseTest {
     @Test
     fun `a repeat asked for without a date starts today, a one-off stays undated`() {
         val dao = FakeTaskDao()
-        val useCase = TasksUseCase(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
+        val useCase = TasksUseCaseImpl(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
 
         runBlocking {
             useCase.addTask("repeat", "", Priority.LOW, RecurrenceType.DAILY, assignedDate = null)
@@ -276,7 +278,7 @@ class TasksUseCaseTest {
     @Test
     fun `adding with a time stamps it and marks it chosen, without one uses the placeholder`() {
         val dao = FakeTaskDao()
-        val useCase = TasksUseCase(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
+        val useCase = TasksUseCaseImpl(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
 
         runBlocking {
             useCase.addTask("timed", "", Priority.LOW, RecurrenceType.NONE, today, dueTime = LocalTime.of(14, 30))
@@ -294,7 +296,7 @@ class TasksUseCaseTest {
     fun `updating rewrites the fields and reschedules, but keeps identity and done state`() {
         val original = oneOff("original", yesterday, isCompleted = true)
         val dao = FakeTaskDao(listOf(original.toEntity()))
-        val useCase = TasksUseCase(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
+        val useCase = TasksUseCaseImpl(TasksRepository(dao, FakeTaskCompletionDao(emptyList())))
 
         runBlocking {
             useCase.updateTask(

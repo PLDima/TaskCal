@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.domain.usecase
+package inc.dimasic.taskcal.domain.usecase.profile
 
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.domain.model.Gender
@@ -10,17 +10,17 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class ProfileUseCase @Inject constructor(
+class ProfileUseCaseImpl @Inject constructor(
     private val settingsRepository: SettingsRepository,
-) {
+) : ProfileUseCase {
 
-    val unitSystem: Flow<UnitSystem> = settingsRepository.unitSystem
+    override val unitSystem: Flow<UnitSystem> = settingsRepository.unitSystem
 
-    suspend fun updateUnitSystem(unitSystem: UnitSystem) {
+    override suspend fun updateUnitSystem(unitSystem: UnitSystem) {
         settingsRepository.updateUnitSystem(unitSystem)
     }
 
-    val details: Flow<ProfileDetails> = settingsRepository.userProfile.map { profile ->
+    override val details: Flow<ProfileDetails> = settingsRepository.userProfile.map { profile ->
         ProfileDetails(
             name = profile.name,
             gender = profile.gender,
@@ -29,7 +29,7 @@ class ProfileUseCase @Inject constructor(
         )
     }
 
-    val goals: Flow<ProfileGoals> = settingsRepository.userProfile.map { profile ->
+    override val goals: Flow<ProfileGoals> = settingsRepository.userProfile.map { profile ->
         ProfileGoals(
             caloriesGoal = profile.nutritionGoal.calories,
             stepsGoal = profile.stepsGoal,
@@ -40,23 +40,23 @@ class ProfileUseCase @Inject constructor(
         )
     }
 
-    suspend fun updateDetails(name: String, gender: Gender?, dateOfBirth: LocalDate?, heightCm: Int?) {
+    override suspend fun updateDetails(name: String, gender: Gender?, dateOfBirth: LocalDate?, heightCm: Int?) {
         settingsRepository.updateDetails(name.trim(), gender, dateOfBirth, heightCm)
     }
 
-    suspend fun updateCaloriesGoal(calories: Int) {
+    override suspend fun updateCaloriesGoal(calories: Int) {
         settingsRepository.updateCaloriesGoal(calories)
     }
 
-    suspend fun updateStepsGoal(steps: Int) {
+    override suspend fun updateStepsGoal(steps: Int) {
         settingsRepository.updateStepsGoal(steps)
     }
 
-    suspend fun updateMacroGoals(protein: Double, carbs: Double, fat: Double) {
+    override suspend fun updateMacroGoals(protein: Double, carbs: Double, fat: Double) {
         settingsRepository.updateMacroGoals(protein, carbs, fat)
     }
 
-    suspend fun updateWeightGoal(weightGoal: Double) {
+    override suspend fun updateWeightGoal(weightGoal: Double) {
         settingsRepository.updateWeightGoal(weightGoal)
     }
 }

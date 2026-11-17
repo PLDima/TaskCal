@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.domain.model.TasksPeriod
-import inc.dimasic.taskcal.domain.usecase.TasksUseCase
+import inc.dimasic.taskcal.domain.usecase.tasks.TasksUseCase
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.toLabel
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodTaskOccurrences

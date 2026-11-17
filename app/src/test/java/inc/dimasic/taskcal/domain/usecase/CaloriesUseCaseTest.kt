@@ -4,12 +4,15 @@ import inc.dimasic.taskcal.data.database.FakeFoodEntryDao
 import inc.dimasic.taskcal.data.local.database.FoodEntryEntity
 import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
-import inc.dimasic.taskcal.data.repository.FoodRepository
 import inc.dimasic.taskcal.data.repository.FakeSettingsRepository
+import inc.dimasic.taskcal.data.repository.FoodRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.calories.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.calories.CaloriesUseCaseImpl
+import inc.dimasic.taskcal.domain.usecase.food.FoodUseCaseImpl
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -40,8 +43,8 @@ class CaloriesUseCaseTest {
         entries: List<FoodEntryEntity> = emptyList(),
         activitiesRepository: ActivitiesRepository = FakeCaloriesActivitiesRepository(),
     ): CaloriesUseCase {
-        val foodUseCase = FoodUseCase(FoodRepository(FakeFoodEntryDao(entries)))
-        return CaloriesUseCase(foodUseCase, activitiesRepository, FakeSettingsRepository())
+        val foodUseCase = FoodUseCaseImpl(FoodRepository(FakeFoodEntryDao(entries)))
+        return CaloriesUseCaseImpl(foodUseCase, activitiesRepository, FakeSettingsRepository())
     }
 
     @Test
@@ -120,8 +123,8 @@ class CaloriesUseCaseTest {
             entry(monday, calories = 100, protein = 20.0),
             entry(tuesday, calories = 100, protein = 10.0),
         )
-        val foodUseCase = FoodUseCase(FoodRepository(FakeFoodEntryDao(entries)))
-        val useCase = CaloriesUseCase(foodUseCase, ThrowingActivitiesRepository(), FakeSettingsRepository())
+        val foodUseCase = FoodUseCaseImpl(FoodRepository(FakeFoodEntryDao(entries)))
+        val useCase = CaloriesUseCaseImpl(foodUseCase, ThrowingActivitiesRepository(), FakeSettingsRepository())
 
         val chart = runBlocking { useCase.macroChartForPeriod(MacroType.PROTEIN, NutritionPeriod.WEEK, 0) }
 

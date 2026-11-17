@@ -3,10 +3,10 @@ package inc.dimasic.taskcal.ui.screens.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
-import inc.dimasic.taskcal.domain.usecase.ProfileUseCase
-import inc.dimasic.taskcal.domain.usecase.TasksUseCase
-import inc.dimasic.taskcal.domain.usecase.WeightUseCase
+import inc.dimasic.taskcal.domain.usecase.calories.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.profile.ProfileUseCase
+import inc.dimasic.taskcal.domain.usecase.tasks.TasksUseCase
+import inc.dimasic.taskcal.domain.usecase.weight.WeightUseCase
 import inc.dimasic.taskcal.domain.usecase.model.CaloriesSummary
 import inc.dimasic.taskcal.ui.screens.uiViews.CaloriesSectionUi
 import inc.dimasic.taskcal.ui.screens.uiViews.WeightSummaryUi

@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Room-backed store of tasks and the completion receipts of their repeating occurrences. Deriving
  * occurrences from a task's recurrence rule is business logic and lives in
- * [inc.dimasic.taskcal.domain.usecase.TasksUseCase] instead.
+ * [inc.dimasic.taskcal.domain.usecase.tasks.TasksUseCase] instead.
  */
 @Singleton
 class TasksRepository @Inject constructor(

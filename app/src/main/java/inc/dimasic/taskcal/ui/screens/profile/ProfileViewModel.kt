@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.domain.model.HealthConnectStatus
-import inc.dimasic.taskcal.domain.usecase.HealthConnectUseCase
-import inc.dimasic.taskcal.domain.usecase.ProfileUseCase
+import inc.dimasic.taskcal.domain.usecase.healthconnect.HealthConnectUseCase
+import inc.dimasic.taskcal.domain.usecase.profile.ProfileUseCase
 import inc.dimasic.taskcal.domain.model.Gender
 import inc.dimasic.taskcal.domain.model.UnitSystem
 import inc.dimasic.taskcal.domain.usecase.model.ProfileDetails

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Room-backed store of logged food entries. Selecting the entries for a period, and grouping them
  * into meals, are domain decisions and live in
- * [inc.dimasic.taskcal.domain.usecase.FoodUseCase] instead.
+ * [inc.dimasic.taskcal.domain.usecase.food.FoodUseCase] instead.
  */
 @Singleton
 class FoodRepository @Inject constructor(

@@ -6,6 +6,7 @@ import inc.dimasic.taskcal.data.repository.FakeSettingsRepository
 import inc.dimasic.taskcal.domain.model.ActivitiesPeriod
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.UserProfile
+import inc.dimasic.taskcal.domain.usecase.activities.ActivitiesUseCaseImpl
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
@@ -23,7 +24,8 @@ import org.junit.Test
  */
 class ActivitiesUseCaseTest {
 
-    private val useCase = ActivitiesUseCase(FakeActivitiesRepository(), FakeSettingsRepository())
+    private val useCase =
+        ActivitiesUseCaseImpl(FakeActivitiesRepository(), FakeSettingsRepository())
 
     private fun totals(period: ActivitiesPeriod, offset: Int) =
         runBlocking { useCase.totalsForPeriod(period, offset) }
@@ -75,7 +77,7 @@ class ActivitiesUseCaseTest {
     @Test
     fun `an edited goal is what the next period is measured against`() {
         val settings = FakeSettingsRepository()
-        val useCase = ActivitiesUseCase(FakeActivitiesRepository(), settings)
+        val useCase = ActivitiesUseCaseImpl(FakeActivitiesRepository(), settings)
         runBlocking { settings.updateStepsGoal(8_000) }
 
         val day = runBlocking { useCase.totalsForPeriod(ActivitiesPeriod.DAY, 0) }.totals

@@ -1,9 +1,10 @@
-package inc.dimasic.taskcal.domain.usecase
+package inc.dimasic.taskcal.domain.usecase.food
 
 import inc.dimasic.taskcal.data.repository.FoodRepository
 import inc.dimasic.taskcal.domain.model.FoodEntry
 import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.dateRangeAt
 import inc.dimasic.taskcal.domain.usecase.model.MealGroup
 import inc.dimasic.taskcal.domain.usecase.model.PeriodFoodEntries
 import java.time.LocalDate
@@ -16,22 +17,22 @@ import kotlinx.coroutines.flow.map
 /** The order meals are eaten in, and so the order they're listed in. */
 private val MEAL_ORDER = listOf(MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER, MealType.SNACK)
 
-class FoodUseCase @Inject constructor(
+class FoodUseCaseImpl @Inject constructor(
     private val foodRepository: FoodRepository,
-) {
+) : FoodUseCase {
 
     /** One-shot: the day screens load this alongside their other reads and show the lot together. */
-    suspend fun entriesForDate(date: LocalDate): List<FoodEntry> =
+    override suspend fun entriesForDate(date: LocalDate): List<FoodEntry> =
         foodRepository.entriesForDate(date)
 
-    fun entriesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodFoodEntries> =
+    override fun entriesForPeriod(period: Flow<NutritionPeriod>, offset: Flow<Int>): Flow<PeriodFoodEntries> =
         combine(foodRepository.foodEntries, period, offset) { entries, selectedPeriod, selectedOffset ->
             val range = selectedPeriod.dateRangeAt(selectedOffset)
             PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
         }
 
     /** One-shot sibling of [entriesForPeriod], for callers that load once per period/offset change. */
-    suspend fun entriesForPeriod(period: NutritionPeriod, offset: Int): PeriodFoodEntries {
+    override suspend fun entriesForPeriod(period: NutritionPeriod, offset: Int): PeriodFoodEntries {
         val range = period.dateRangeAt(offset)
         val entries = foodRepository.foodEntries.first()
         return PeriodFoodEntries(dateRange = range, entries = entries.filter { range.contains(it.date) })
@@ -44,8 +45,8 @@ class FoodUseCase @Inject constructor(
      * instead, which is how editing works — the two differ only in whether the caller already has
      * an id to reuse.
      */
-    suspend fun saveEntry(
-        id: String? = null,
+    override suspend fun saveEntry(
+        id: String?,
         date: LocalDate,
         mealType: MealType,
         name: String,
@@ -66,12 +67,12 @@ class FoodUseCase @Inject constructor(
         foodRepository.saveEntry(if (id == null) entry else entry.copy(id = id))
     }
 
-    suspend fun deleteEntry(id: String) {
+    override suspend fun deleteEntry(id: String) {
         foodRepository.deleteEntry(id)
     }
 
     /** A day's entries grouped by meal, in eating order. Meals with nothing logged are left out. */
-    suspend fun mealsForDate(date: LocalDate): List<MealGroup> {
+    override suspend fun mealsForDate(date: LocalDate): List<MealGroup> {
         val byMeal = entriesForDate(date).groupBy { it.mealType }
         return MEAL_ORDER.mapNotNull { mealType ->
             byMeal[mealType]?.let { MealGroup(mealType = mealType, entries = it) }

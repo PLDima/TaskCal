@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.domain.usecase
+package inc.dimasic.taskcal.domain.usecase.tasks
 
 import inc.dimasic.taskcal.data.repository.TasksRepository
 import inc.dimasic.taskcal.domain.model.DateRange
@@ -8,14 +8,19 @@ import inc.dimasic.taskcal.domain.model.Task
 import inc.dimasic.taskcal.domain.model.TaskCompletion
 import inc.dimasic.taskcal.domain.model.TaskState
 import inc.dimasic.taskcal.domain.model.TasksPeriod
+import inc.dimasic.taskcal.domain.usecase.dateRangeAt
+import inc.dimasic.taskcal.domain.usecase.model.ChartBucket
+import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodTaskOccurrences
 import inc.dimasic.taskcal.domain.usecase.model.TaskListItem
 import inc.dimasic.taskcal.domain.usecase.model.TaskOccurrenceStat
 import inc.dimasic.taskcal.domain.usecase.model.TaskPriorityGroup
 import inc.dimasic.taskcal.domain.usecase.model.TaskStatusBreakdown
-import inc.dimasic.taskcal.domain.usecase.model.ChartBucket
-import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.TasksSummary
+import inc.dimasic.taskcal.domain.usecase.monthChartBuckets
+import inc.dimasic.taskcal.domain.usecase.nextOccurrenceFrom
+import inc.dimasic.taskcal.domain.usecase.occurrencesIn
+import inc.dimasic.taskcal.domain.usecase.weekChartBuckets
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -37,16 +42,16 @@ private val PRIORITY_ORDER = listOf(Priority.HIGH, Priority.MEDIUM, Priority.LOW
  */
 private val DEFAULT_TASK_TIME: LocalTime = LocalTime.of(9, 0)
 
-class TasksUseCase @Inject constructor(
+class TasksUseCaseImpl @Inject constructor(
     private val tasksRepository: TasksRepository,
-) {
+) : TasksUseCase {
 
     /**
      * Occurrences falling on [date], most important first. Tasks with no date have no deadline,
      * so they always apply. Completed occurrences are dropped: the Today list shows only what is
      * still outstanding.
      */
-    fun tasksForDate(date: Flow<LocalDate>): Flow<List<TaskListItem>> =
+    override fun tasksForDate(date: Flow<LocalDate>): Flow<List<TaskListItem>> =
         combine(tasksRepository.tasks, tasksRepository.completions, date) { tasks, completions, selectedDate ->
             val now = LocalDateTime.now()
             tasks.mapNotNull { task ->
@@ -64,7 +69,7 @@ class TasksUseCase @Inject constructor(
      * One row per task, closest first. A repeating task is represented only by its next
      * occurrence rather than projected out to some arbitrary horizon, and undated tasks sort last.
      */
-    fun allTasks(): Flow<List<TaskListItem>> =
+    override fun allTasks(): Flow<List<TaskListItem>> =
         combine(tasksRepository.tasks, tasksRepository.completions) { tasks, completions ->
             val today = LocalDate.now()
             val now = LocalDateTime.now()
@@ -79,7 +84,7 @@ class TasksUseCase @Inject constructor(
                 .sortedWith(compareBy(nullsLast()) { it.occurrenceDate })
         }
 
-    fun occurrencesForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<PeriodTaskOccurrences> =
+    override fun occurrencesForPeriod(period: Flow<TasksPeriod>, offset: Flow<Int>): Flow<PeriodTaskOccurrences> =
         combine(
             tasksRepository.tasks,
             tasksRepository.completions,
@@ -106,18 +111,18 @@ class TasksUseCase @Inject constructor(
      * shared, stateful subscription to [occurrencesForPeriod] and maps this off it, rather than
      * each stat re-running the underlying [combine] and Room queries on its own.
      */
-    fun summaryOf(occurrences: PeriodTaskOccurrences): TasksSummary = occurrences.toSummary()
+    override fun summaryOf(occurrences: PeriodTaskOccurrences): TasksSummary = occurrences.toSummary()
 
-    fun taskStatusOf(occurrences: PeriodTaskOccurrences): TaskStatusBreakdown = occurrences.toTaskStatusBreakdown()
+    override fun taskStatusOf(occurrences: PeriodTaskOccurrences): TaskStatusBreakdown = occurrences.toTaskStatusBreakdown()
 
-    fun onTimeRateChartOf(occurrences: PeriodTaskOccurrences, period: TasksPeriod): List<ChartPoint> =
+    override fun onTimeRateChartOf(occurrences: PeriodTaskOccurrences, period: TasksPeriod): List<ChartPoint> =
         when (period) {
             TasksPeriod.WEEK -> weekChartBuckets(occurrences)
             TasksPeriod.MONTH -> monthChartBuckets(occurrences)
             TasksPeriod.ALL_TIME -> allTimeChartBuckets(occurrences)
         }
 
-    suspend fun setTaskCompleted(taskId: String, occurrenceDate: LocalDateTime?, completed: Boolean) {
+    override suspend fun setTaskCompleted(taskId: String, occurrenceDate: LocalDateTime?, completed: Boolean) {
         tasksRepository.setCompleted(taskId, occurrenceDate, completed)
     }
 
@@ -125,11 +130,11 @@ class TasksUseCase @Inject constructor(
      * Deletes the whole task. For a repeating task that removes every occurrence, since they are
      * all expanded from the one stored task.
      */
-    suspend fun deleteTask(taskId: String) {
+    override suspend fun deleteTask(taskId: String) {
         tasksRepository.deleteTask(taskId)
     }
 
-    suspend fun task(taskId: String): Task? = tasksRepository.task(taskId)
+    override suspend fun task(taskId: String): Task? = tasksRepository.task(taskId)
 
     /**
      * A repeating task expands from its start date, so it always needs one: asking for a repeat
@@ -137,13 +142,13 @@ class TasksUseCase @Inject constructor(
      * weekly or monthly task also remembers which weekday or day-of-month it lands on, taken from
      * that start date. A [dueTime] only means something alongside a date.
      */
-    suspend fun addTask(
+    override suspend fun addTask(
         title: String,
         description: String,
         priority: Priority,
         recurrenceType: RecurrenceType,
         assignedDate: LocalDate?,
-        dueTime: LocalTime? = null,
+        dueTime: LocalTime?,
     ) {
         tasksRepository.saveTask(
             Task(title = title, description = description, priority = priority, recurrenceType = recurrenceType)
@@ -156,7 +161,7 @@ class TasksUseCase @Inject constructor(
      * identity and, for a one-off, its done state are kept; a repeating task's completion receipts
      * stay attached to whichever occurrence dates still expand.
      */
-    suspend fun updateTask(
+    override suspend fun updateTask(
         taskId: String,
         title: String,
         description: String,

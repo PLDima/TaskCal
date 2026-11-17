@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.domain.usecase
+package inc.dimasic.taskcal.domain.usecase.weight
 
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.data.repository.WeightRepository
@@ -10,10 +10,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 
 /** Reads the user's weight against the goal they set for it. */
-class WeightUseCase @Inject constructor(
+class WeightUseCaseImpl @Inject constructor(
     private val weightRepository: WeightRepository,
     settingsRepository: SettingsRepository,
-) {
+) : WeightUseCase {
 
     private val userProfile = settingsRepository.userProfile
 
@@ -22,7 +22,7 @@ class WeightUseCase @Inject constructor(
      * weight moved across that period, read from its first and last weigh-ins. The reads run
      * alongside each other; both go to Health Connect.
      */
-    suspend fun summary(changeOver: DateRange? = null): WeightSummary = coroutineScope {
+    override suspend fun summary(changeOver: DateRange?): WeightSummary = coroutineScope {
         val latest = async { weightRepository.latestWeight() }
         val history = async { changeOver?.let { weightRepository.weightHistory(it) }.orEmpty() }
         val goal = userProfile.first().weightGoal
