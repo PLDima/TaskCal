@@ -1,9 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
+
+// Debug builds talk to a backend on the dev machine. 10.0.2.2 only reaches it from the emulator;
+// a physical device needs the machine's LAN address, set as `taskcal.baseUrl` in local.properties.
+val debugBaseUrl = Properties()
+    .apply { rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load) }
+    .getProperty("taskcal.baseUrl", "http://10.0.2.2:8080")
 
 android {
     namespace = "inc.dimasic.taskcal"
@@ -30,7 +38,7 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
+            buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
         }
     }
     compileOptions {
@@ -62,12 +70,11 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
     implementation(libs.retrofit)
     implementation(libs.moshi)
     implementation(libs.moshiConverter)
-    implementation(libs.moshiCodegen)
+    ksp(libs.moshiCodegen)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
