@@ -1,9 +1,9 @@
 package inc.dimasic.taskcal.data.repository
 
-import inc.dimasic.taskcal.data.database.TaskCompletionDao
-import inc.dimasic.taskcal.data.database.TaskDao
-import inc.dimasic.taskcal.data.database.toDomain
-import inc.dimasic.taskcal.data.database.toEntity
+import inc.dimasic.taskcal.data.local.database.TaskCompletionDao
+import inc.dimasic.taskcal.data.local.database.TaskDao
+import inc.dimasic.taskcal.data.local.database.toDomain
+import inc.dimasic.taskcal.data.local.database.toEntity
 import inc.dimasic.taskcal.domain.model.Task
 import inc.dimasic.taskcal.domain.model.TaskCompletion
 import java.time.LocalDateTime

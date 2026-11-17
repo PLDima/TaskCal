@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.database
+package inc.dimasic.taskcal.data.local.database
 
 import inc.dimasic.taskcal.domain.model.FoodEntry
 import inc.dimasic.taskcal.domain.model.MealType

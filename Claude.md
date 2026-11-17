@@ -10,6 +10,7 @@ The project follows a layered architecture:
 - UI — presentation and user interaction.
 - Domain — business logic and domain models.
 - Data — data sources and persistence.
+- DI - all dependency injection related modules, files or providers.
 
 Each layer is a package under `inc.dimasic.taskcal`:
 

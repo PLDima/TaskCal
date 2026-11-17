@@ -1,7 +1,7 @@
 package inc.dimasic.taskcal.domain.usecase
 
 import inc.dimasic.taskcal.data.database.FakeFoodEntryDao
-import inc.dimasic.taskcal.data.database.FoodEntryEntity
+import inc.dimasic.taskcal.data.local.database.FoodEntryEntity
 import inc.dimasic.taskcal.data.model.RecordedActivity
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
 import inc.dimasic.taskcal.data.repository.FoodRepository

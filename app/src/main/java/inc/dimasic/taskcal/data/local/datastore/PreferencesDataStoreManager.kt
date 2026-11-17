@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.datastore
+package inc.dimasic.taskcal.data.local.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore

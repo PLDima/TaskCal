@@ -2,8 +2,8 @@ package inc.dimasic.taskcal.domain.usecase
 
 import inc.dimasic.taskcal.data.database.FakeTaskCompletionDao
 import inc.dimasic.taskcal.data.database.FakeTaskDao
-import inc.dimasic.taskcal.data.database.toDomain
-import inc.dimasic.taskcal.data.database.toEntity
+import inc.dimasic.taskcal.data.local.database.toDomain
+import inc.dimasic.taskcal.data.local.database.toEntity
 import inc.dimasic.taskcal.data.repository.TasksRepository
 import inc.dimasic.taskcal.domain.model.Priority
 import inc.dimasic.taskcal.domain.model.RecurrenceType

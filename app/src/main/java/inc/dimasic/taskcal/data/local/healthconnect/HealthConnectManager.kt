@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.healthconnect
+package inc.dimasic.taskcal.data.local.healthconnect
 
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient

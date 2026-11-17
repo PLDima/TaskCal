@@ -1,8 +1,10 @@
 package inc.dimasic.taskcal.data.database
 
+import inc.dimasic.taskcal.data.local.database.TaskDao
+import inc.dimasic.taskcal.data.local.database.TaskEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 
-/** In-memory [TaskDao], so the real [inc.dimasic.taskcal.data.repository.TasksRepository] can run without Room. */
+/** In-memory [inc.dimasic.taskcal.data.local.database.TaskDao], so the real [inc.dimasic.taskcal.data.repository.TasksRepository] can run without Room. */
 internal class FakeTaskDao(initial: List<TaskEntity> = emptyList()) : TaskDao {
 
     private val tasks = MutableStateFlow(initial)

@@ -1,14 +1,16 @@
-package inc.dimasic.taskcal.data.database
+package inc.dimasic.taskcal.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import inc.dimasic.taskcal.data.local.database.FoodEntryDao
+import inc.dimasic.taskcal.data.local.database.TaskCalDatabase
+import inc.dimasic.taskcal.data.local.database.TaskCompletionDao
+import inc.dimasic.taskcal.data.local.database.TaskDao
 import javax.inject.Singleton
 
 private const val DATABASE_NAME = "taskcal.db"

@@ -2,6 +2,9 @@ package inc.dimasic.taskcal.data.datastore
 
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.preferencesOf
+import inc.dimasic.taskcal.data.local.datastore.UserProfileKeys
+import inc.dimasic.taskcal.data.local.datastore.toUnitSystem
+import inc.dimasic.taskcal.data.local.datastore.toUserProfile
 import inc.dimasic.taskcal.domain.model.Gender
 import inc.dimasic.taskcal.domain.model.UnitSystem
 import inc.dimasic.taskcal.domain.model.UserProfile

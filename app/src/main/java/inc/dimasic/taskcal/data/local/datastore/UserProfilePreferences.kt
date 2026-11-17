@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.datastore
+package inc.dimasic.taskcal.data.local.datastore
 
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.doublePreferencesKey

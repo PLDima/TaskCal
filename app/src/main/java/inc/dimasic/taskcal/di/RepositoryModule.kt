@@ -1,9 +1,15 @@
-package inc.dimasic.taskcal.data.repository
+package inc.dimasic.taskcal.di
 
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import inc.dimasic.taskcal.data.repository.ActivitiesRepository
+import inc.dimasic.taskcal.data.repository.DataStoreSettingsRepository
+import inc.dimasic.taskcal.data.repository.HealthConnectActivitiesRepository
+import inc.dimasic.taskcal.data.repository.HealthConnectWeightRepository
+import inc.dimasic.taskcal.data.repository.SettingsRepository
+import inc.dimasic.taskcal.data.repository.WeightRepository
 
 /** Binds repository interfaces to their concrete, real-data-source implementations. */
 @Module

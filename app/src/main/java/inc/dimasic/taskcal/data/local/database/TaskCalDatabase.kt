@@ -1,4 +1,4 @@
-package inc.dimasic.taskcal.data.database
+package inc.dimasic.taskcal.data.local.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
