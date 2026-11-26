@@ -58,6 +58,7 @@ Tasks and Activities are the reference implementations — follow them when in d
   - The repositories are concrete while they are in-memory mocks. Add interfaces when a real
     data source arrives.
 - Keep each non-private data class in a separate file.
+- Do not leave any trailing spaces.
 
 # Testing
 
