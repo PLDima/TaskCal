@@ -1,8 +1,8 @@
 package inc.dimasic.taskcal.data.repository
 
-import inc.dimasic.taskcal.data.database.FoodEntryDao
-import inc.dimasic.taskcal.data.database.toDomain
-import inc.dimasic.taskcal.data.database.toEntity
+import inc.dimasic.taskcal.data.local.database.FoodEntryDao
+import inc.dimasic.taskcal.data.local.database.toDomain
+import inc.dimasic.taskcal.data.local.database.toEntity
 import inc.dimasic.taskcal.domain.model.FoodEntry
 import java.time.LocalDate
 import javax.inject.Inject
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 /**
  * Room-backed store of logged food entries. Selecting the entries for a period, and grouping them
  * into meals, are domain decisions and live in
- * [inc.dimasic.taskcal.domain.usecase.FoodUseCase] instead.
+ * [inc.dimasic.taskcal.domain.usecase.food.FoodUseCase] instead.
  */
 @Singleton
 class FoodRepository @Inject constructor(

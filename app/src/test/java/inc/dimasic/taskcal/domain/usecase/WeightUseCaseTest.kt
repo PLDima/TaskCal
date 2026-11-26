@@ -5,6 +5,7 @@ import inc.dimasic.taskcal.data.repository.FakeSettingsRepository
 import inc.dimasic.taskcal.data.repository.WeightRepository
 import inc.dimasic.taskcal.domain.model.DateRange
 import inc.dimasic.taskcal.domain.model.UserProfile
+import inc.dimasic.taskcal.domain.usecase.weight.WeightUseCaseImpl
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -21,7 +22,7 @@ class WeightUseCaseTest {
     private val week = weekRangeAt(0)
 
     private fun useCase(vararg samples: RecordedWeight) =
-        WeightUseCase(FakeWeightRepository(samples.toList()), FakeSettingsRepository())
+        WeightUseCaseImpl(FakeWeightRepository(samples.toList()), FakeSettingsRepository())
 
     @Test
     fun `the latest weigh-in is measured against the goal`() {

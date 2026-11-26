@@ -1,9 +1,9 @@
 package inc.dimasic.taskcal.data.repository
 
-import inc.dimasic.taskcal.data.datastore.PreferencesDataStoreManager
-import inc.dimasic.taskcal.data.datastore.UserProfileKeys
-import inc.dimasic.taskcal.data.datastore.toUnitSystem
-import inc.dimasic.taskcal.data.datastore.toUserProfile
+import inc.dimasic.taskcal.data.local.datastore.PreferencesDataStoreManager
+import inc.dimasic.taskcal.data.local.datastore.UserProfileKeys
+import inc.dimasic.taskcal.data.local.datastore.toUnitSystem
+import inc.dimasic.taskcal.data.local.datastore.toUserProfile
 import inc.dimasic.taskcal.domain.model.Gender
 import inc.dimasic.taskcal.domain.model.UnitSystem
 import inc.dimasic.taskcal.domain.model.UserProfile

@@ -1,5 +1,7 @@
 package inc.dimasic.taskcal.data.database
 
+import inc.dimasic.taskcal.data.local.database.toDomain
+import inc.dimasic.taskcal.data.local.database.toEntity
 import inc.dimasic.taskcal.domain.model.FoodEntry
 import inc.dimasic.taskcal.domain.model.MealType
 import java.time.LocalDate

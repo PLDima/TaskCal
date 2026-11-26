@@ -7,7 +7,7 @@ import java.time.LocalDate
 /**
  * Recorded activity, totalled over a date range. Choosing which days a period covers and measuring
  * the totals against the user's goals are domain decisions and live in
- * [inc.dimasic.taskcal.domain.usecase.ActivitiesUseCase] instead.
+ * [inc.dimasic.taskcal.domain.usecase.activities.ActivitiesUseCase] instead.
  */
 interface ActivitiesRepository {
 

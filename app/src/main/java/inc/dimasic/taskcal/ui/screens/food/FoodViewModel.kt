@@ -4,8 +4,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.common.CommonViewModel
 import inc.dimasic.taskcal.domain.model.MealType
-import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
-import inc.dimasic.taskcal.domain.usecase.FoodUseCase
+import inc.dimasic.taskcal.domain.usecase.calories.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.food.FoodUseCase
 import inc.dimasic.taskcal.domain.usecase.model.MealGroup
 import inc.dimasic.taskcal.ui.screens.uiViews.toMacrosUi
 import java.time.LocalDate

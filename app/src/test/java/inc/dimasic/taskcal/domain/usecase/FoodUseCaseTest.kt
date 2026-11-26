@@ -1,10 +1,11 @@
 package inc.dimasic.taskcal.domain.usecase
 
 import inc.dimasic.taskcal.data.database.FakeFoodEntryDao
-import inc.dimasic.taskcal.data.database.FoodEntryEntity
+import inc.dimasic.taskcal.data.local.database.FoodEntryEntity
 import inc.dimasic.taskcal.data.repository.FoodRepository
 import inc.dimasic.taskcal.domain.model.MealType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
+import inc.dimasic.taskcal.domain.usecase.food.FoodUseCaseImpl
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -20,7 +21,7 @@ class FoodUseCaseTest {
 
     private val today = LocalDate.now()
 
-    private fun useCase(entries: List<FoodEntryEntity>) = FoodUseCase(FoodRepository(FakeFoodEntryDao(entries)))
+    private fun useCase(entries: List<FoodEntryEntity>) = FoodUseCaseImpl(FoodRepository(FakeFoodEntryDao(entries)))
 
     @Test
     fun `meals come back in eating order regardless of how they were stored`() {

@@ -5,7 +5,7 @@ import inc.dimasic.taskcal.domain.model.DateRange
 
 /**
  * Recorded weigh-ins. Measuring them against the user's goal, and reading a trend out of them,
- * are domain decisions and live in [inc.dimasic.taskcal.domain.usecase.WeightUseCase] instead.
+ * are domain decisions and live in [inc.dimasic.taskcal.domain.usecase.weight.WeightUseCase] instead.
  */
 interface WeightRepository {
 

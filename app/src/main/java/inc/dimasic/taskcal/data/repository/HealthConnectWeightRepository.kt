@@ -1,6 +1,6 @@
 package inc.dimasic.taskcal.data.repository
 
-import inc.dimasic.taskcal.data.healthconnect.HealthConnectManager
+import inc.dimasic.taskcal.data.local.healthconnect.HealthConnectManager
 import inc.dimasic.taskcal.data.model.RecordedWeight
 import inc.dimasic.taskcal.domain.model.DateRange
 import javax.inject.Inject

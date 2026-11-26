@@ -5,7 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import inc.dimasic.taskcal.common.CommonViewModel
 import inc.dimasic.taskcal.domain.model.MacroType
 import inc.dimasic.taskcal.domain.model.NutritionPeriod
-import inc.dimasic.taskcal.domain.usecase.CaloriesUseCase
+import inc.dimasic.taskcal.domain.usecase.calories.CaloriesUseCase
 import inc.dimasic.taskcal.ui.screens.statistic.statistic_views.toLabel
 import inc.dimasic.taskcal.domain.usecase.model.ChartPoint
 import inc.dimasic.taskcal.domain.usecase.model.PeriodCaloriesSummary

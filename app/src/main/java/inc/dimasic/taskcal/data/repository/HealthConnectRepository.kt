@@ -1,7 +1,7 @@
 package inc.dimasic.taskcal.data.repository
 
-import inc.dimasic.taskcal.data.healthconnect.HealthConnectAvailability
-import inc.dimasic.taskcal.data.healthconnect.HealthConnectManager
+import inc.dimasic.taskcal.data.local.healthconnect.HealthConnectAvailability
+import inc.dimasic.taskcal.data.local.healthconnect.HealthConnectManager
 import inc.dimasic.taskcal.domain.model.HealthConnectStatus
 import javax.inject.Inject
 import javax.inject.Singleton
