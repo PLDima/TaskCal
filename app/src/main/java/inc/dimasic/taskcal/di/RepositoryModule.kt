@@ -5,9 +5,11 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import inc.dimasic.taskcal.data.repository.ActivitiesRepository
+import inc.dimasic.taskcal.data.repository.ApiRemoteRepository
 import inc.dimasic.taskcal.data.repository.DataStoreSettingsRepository
 import inc.dimasic.taskcal.data.repository.HealthConnectActivitiesRepository
 import inc.dimasic.taskcal.data.repository.HealthConnectWeightRepository
+import inc.dimasic.taskcal.data.repository.RemoteRepository
 import inc.dimasic.taskcal.data.repository.SettingsRepository
 import inc.dimasic.taskcal.data.repository.WeightRepository
 
@@ -24,4 +26,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun weightRepository(impl: HealthConnectWeightRepository): WeightRepository
+
+    @Binds
+    abstract fun remoteRepository(impl: ApiRemoteRepository): RemoteRepository
 }
